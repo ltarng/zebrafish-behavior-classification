@@ -1,0 +1,143 @@
+2 fishes tracking valid:
+frame 500-690
+frame 1117-1510
+
+-
+
+lost = lost tracking
+
+-
+
+Annotation
+
+normal, frame 500-519
+
+chase, 0 catch 1, 521-556
+chase?, 0 catch 1, 557-583
+
+normal, frame 584-690
+
+lost (fish 0), 691-1116
+
+bite, 0 catch 1, 1117-1129
+
+normal, 1130-1165
+bite, fish 1 catch 0, 1166-1177
+
+normal?, 1178-1354
+bite?, fish0 catch 1, 1355-1366
+normal? chase?, 0 catch 1, 1367-1380
+normal, 1381-1388
+chase?, 1 catch0, 1389-1420
+flee? normal?, fish 1, frame 1399-1420
+biting?, fish 0 catch fish 1, 1421-1450
+
+chase?, fish 0 catch fish 1, 1451-1483
+
+lost, 1503-1644
+
+normal, frame 1645-1682?
+chase, fish 0 catch fish 1, 1683-1832
+
+lost tracking, 1833-1886
+
+chase, fish 0 catch fish 1, 1887-1905
+chase, fish 0 catch fish 1, 1906-1938
+
+lost, 1939-1958
+chase, fish 0 catch fish 1, 1939-2086
+ [EXCHANGE NUMBER TAG, fish 0 and fish 1, at frame 2087-2088]
+  以下沒有修正tag編號，繼續採取影片標註的號碼
+
+normal, 2089-2116
+chase, fish 1 catch fish 0, 2117-2145
+
+----------10/02 start
+
+normal?互追?, frame 2146-2176
+
+ [EXCHANGE NUMBER TAG, at frame 2177?]
+
+normal, 2178-2221
+
+ [EXCHANGE NUMBER TAG, at 2223-2229]
+
+fish 1 display?circle?, 2230-2255
+
+ [EXCHANGE NUMBER TAG, 2265]
+
+display?, 2266-2411
+
+ [EXCHANGE NUMBER TAG, at 2346]
+
+ [EXCHANGE NUMBER TAG, at 2382]
+
+lost tracking, 2405-2428
+
+normal?chase?, 2429-2463
+
+chase, fish 1 catch fish 0, 2464-2508
+ [EXCHANGE NUMBER TAG, 2509-2518]
+chase, fish 0 catch fish 1, 2519-2555
+
+ [EXCHANGE NUMBER TAG, at 2558]
+chase, fish 1 catch fish 0, 2562-2604
+
+ [EXCHANGE NUMBER TAG, at frame 2605]
+normal, 2605-2644
+chase, fish 0 catch fish 1, 2645-2968
+
+normal, 2969-3000
+
+chase, fish 0 catch fish 1, 3001-3008
+ [EXCHANGE NUMBER TAG, at 3009-3011]
+
+normal, 3012-3030
+
+bite, fish 1 catch fish 0, 3031-3045
+
+normal, 3046-3078
+
+chase, fish 0 catch fish 1, 3079-3141
+ [EXCHANGE NUMBER TAG, 3142-3147]
+
+lost tracking, 3151-3157
+
+circle, 3158-3207
+ [EXCHANGE NUMBER TAG, 3192-3198]
+
+chase, fish 1 catch fish 0, 3200-3210
+
+bite?, fish 0 catch fish 1, 3211-3233
+
+
+normal?, 3234-3299
+
+chase, fish 0 catch fish 1, 3260-3320
+
+display, 3321-3388
+bite, fish 0 catch fish 1 , 3389-3432
+circle, 3433-3463
+
+bite, 3464-3470
+lost, 3471-3489
+circle, 3490-3507
+lost, 3508-3529
+
+display, 3530-3555
+bite, fish 0 catch 1, 3559-3580
+normal, 3581-3591
+chase, fish 0 catch 1, 3592-3625
+
+normal, 3626-3649
+circle, 3650-3689
+chase, fish 0 catch fish 1, 3690-3748
+bite, fish 0 catch fish 1, 3749-3782
+display?, 3783-3793
+chase, fish0 catch fish1, 3794-3821
+bite, 0 catch 1, 3822-3842
+lost, 3843-3857
+display, 3858-3902
+bite, 1 catch 0, 3903-3930
+
+, 3933-
