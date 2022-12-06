@@ -10,7 +10,7 @@ def dtw_same_interval(start_frame, end_frame, traj_df):
     return distance
 
 
-def calculate_dtw(folder_path, video_name, filter_name, ifPrintResult):
+def dtw_main(folder_path, video_name, filter_name, ifPrintResult):
     # Read trajectory data
     file_path = folder_path + video_name + "_" + filter_name + "_filtered_" + "annotated.csv"
     traj_coordinate_df = np.genfromtxt(file_path, delimiter=",", dtype=int, skip_header=1)
@@ -27,11 +27,11 @@ def calculate_dtw(folder_path, video_name, filter_name, ifPrintResult):
 
     # Calculate DTW  in the same trajectory interval between two trajectories
     for index in range(0, len(anno_df.index)):
-        # get information from annotation data
+        # get a line of interval information from annotation data
         behavior_type = anno_df['BehaviorType'].iloc[index]
         start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
-        # calculate DTW
+        # calculate DTW in the same interval (compare the trajectory of fish 0 and fish 1)
         dtw_distance = dtw_same_interval(start_frame, end_frame, traj_coordinate_df)
         temp_df.iloc[index] = dtw_distance
 

@@ -33,51 +33,25 @@ def auto_annotation(folder_path, video_name, filter_name):
     print("Complete annotation.\n")
 
 
-def add_behavior_tag_number(df):
+def add_behavior_tag_number(df):  # short version?
     # Set default value in a new clolumn "BehaviorNum"
     df['BehaviorNum'] = 0
-    temp_df = df['BehaviorNum'].copy()  # use a temporary variable to prevent SettingWithCopyWarning problem
+    temp_df = df['BehaviorNum'].copy()  # use a temporary variable to prevent  SettingWithCopyWarning  problem
 
-    # Automatic annotate the trajectory data
     for index in range(0, len(df.index)):
         behavior_type = df['BehaviorType'].iloc[index]
 
-        if behavior_type == 'normal':
-            temp_df.iloc[index] = 1
-        elif behavior_type == 'display':
-            temp_df.iloc[index] = 2
-        elif behavior_type == 'circle':
-            temp_df.iloc[index] = 3
-        elif behavior_type == 'chase':
-            temp_df.iloc[index] = 4
-        elif behavior_type == 'bite':
-            temp_df.iloc[index] = 5
+        # Make behavior dictionary
+        behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
+        
+        # Annotate a behavior in df['BehaviorNum'] column
+        if behavior_type in behavior_dict.keys():
+            temp_df.iloc[index] = behavior_dict[behavior_type]
         else:
             temp_df.iloc[index] = 100
+
     # Remeber to save the result from the temporary variable
     df['BehaviorNum'] = temp_df.copy()
-
-
-# def add_behavior_tag_number(df):  # short version?
-#     # Set default value in a new clolumn "BehaviorNum"
-#     df['BehaviorNum'] = 0
-#     temp_df = df['BehaviorNum'].copy()  # use a temporary variable to prevent  SettingWithCopyWarning  problem
-
-#     # Automatic annotate the trajectory data
-#     for index in range(0, len(df.index)):
-#         behavior_type = df['BehaviorType'].iloc[index]
-
-#         # Make behavior dictionary
-#         behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
-        
-#         # Annotate a behavior
-#         if behavior_type in behavior_dict.keys():
-#             temp_df.iloc[index] = behavior_dict[behavior_type]
-#         else:
-#             temp_df.iloc[index] = 100
-
-#     # Remeber to save the result from the temporary variable
-#     df['BehaviorNum'] = temp_df.copy()
 
 
 def sort_annotation_information(folder_path, video_name):
