@@ -7,7 +7,7 @@ import svm_model
 """ GENERAL PARAMETER SETTING """
 folder_path = "D:/Google Cloud (60747050S)/Research/Trajectory Analysis/"
 video_name = '1-14'
-filter_name = "kalman"  # filter option: mean, median, kalman
+filter_name = "mean"  # filter option: mean, median, kalman
 
 
 def main():

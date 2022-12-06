@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
@@ -18,7 +19,7 @@ def svm(folder_path, video_name, filter_name):
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_DTW_result.csv')
 
     # Divide data into trainging data and testing data
-    X = df.iloc[:,3:4].values  # idk why this line work fine, df.iloc[4] should not exist
+    X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
 
