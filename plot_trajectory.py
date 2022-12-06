@@ -66,7 +66,8 @@ def plot_trajectory(video_name, df, df_filtered):
 
 def plot_filtered_traj_for_compare(folder_path, video_name, filter_name):
     # Read unfiltered trajectory data
-    df = pd.read_csv(folder_path + video_name + '_tracked.csv')
+    resource_folder = folder_path + "raw_data/"
+    df = pd.read_csv(resource_folder + video_name + '_tracked.csv')
 
     # Read filtered trajectory data
     folder_path_filtered = folder_path + "cleaned_data/"

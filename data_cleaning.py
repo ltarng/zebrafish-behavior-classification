@@ -86,11 +86,11 @@ def kalman_filter(df):
 
 
 def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
-    save_path = folder_path + "cleaned_data/"
+    save_folder = folder_path + "cleaned_data/"
     
     # Read from resource
-    raw_data_path = "D:/Google Cloud (60747050S)/Research/FMTResult/fighting/"
-    df = pd.read_csv(raw_data_path + video_name + "_tracked.csv")
+    resource_folder = folder_path + "raw_data/"
+    df = pd.read_csv(resource_folder + video_name + "_tracked.csv")
 
     # Apply filter and save data
     window_len = 3  # window size should be odd number
@@ -104,11 +104,11 @@ def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
     else:
         sys.exit("filter_name should be 'mean', 'median' or 'kalman', please check the parameter setting in main.py")
 
-    df_filtered.to_csv(save_path + video_name + "_" + filter_name + "_filtered.csv", index_label="FrameIndex")
+    df_filtered.to_csv(save_folder + video_name + "_" + filter_name + "_filtered.csv", index_label="FrameIndex")
     
     # System messages
     print("Complete data cleaning by " + filter_name + " filter.")
-    print("The file had been saved in: " + save_path + "\n")
+    print("The file had been saved in: " + save_folder + "\n")
 
     if ifPlotTraj == True:
         plot_trajectory.plot_trajectory(video_name, df, df_filtered)

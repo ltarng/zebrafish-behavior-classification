@@ -15,11 +15,10 @@ def plot_confusion_matrix(confusion_matrix):
 
 def svm(folder_path, video_name, filter_name):
     # Read DTW result file
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_filtered_DTW.csv')
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_DTW_result.csv')
 
-    # SVM model
     # Divide data into trainging data and testing data
-    X = df.iloc[:,3:5].values
+    X = df.iloc[:,3:4].values  # idk why this line work fine, df.iloc[4] should not exist
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
 
@@ -32,8 +31,7 @@ def svm(folder_path, video_name, filter_name):
 
     # Load classification_report & confusion_matrix to estimate the performance of model
     cm = confusion_matrix(y_test, predictions)
-    print(cm)
-    print('\n')
-    print(classification_report(y_test, predictions))
 
+    # Show the SVM result
+    print(classification_report(y_test, predictions))
     plot_confusion_matrix(cm)

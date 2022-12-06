@@ -12,12 +12,13 @@ def dtw_same_interval(start_frame, end_frame, traj_df):
 
 def dtw_main(folder_path, video_name, filter_name, ifPrintResult):
     # Read trajectory data
-    file_path = folder_path + video_name + "_" + filter_name + "_filtered_" + "annotated.csv"
+    resource_folder = folder_path + "training_data/"
+    file_path = resource_folder + video_name + "_" + filter_name + "_filtered_annotated.csv"
     traj_coordinate_df = np.genfromtxt(file_path, delimiter=",", dtype=int, skip_header=1)
 
     # Reading annotation file
-    resource_path = folder_path + "annotation_information/"
-    anno_file_path = resource_path + video_name + "_annotation_information_sorted.csv"
+    anno_resource_folder = folder_path + "annotation_information_data/"
+    anno_file_path = anno_resource_folder + video_name + "_annotation_information_sorted.csv"
     anno_df = pd.read_csv(anno_file_path)
 
 
@@ -43,7 +44,7 @@ def dtw_main(folder_path, video_name, filter_name, ifPrintResult):
     anno_df["DTW_distance"] = temp_df.copy()
 
     # Save the DTW result
-    anno_df.to_csv(video_name + "_" + filter_name + "_filtered_DTW.csv", index = False)
+    anno_df.to_csv(video_name + "_" + filter_name + "_DTW_result.csv", index = False)
     print("Complete DTW calculation.")
     print("The file had been saved in: " + folder_path)
     print("\n")

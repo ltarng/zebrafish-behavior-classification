@@ -1,4 +1,4 @@
-import annotation
+import annotate_training_data
 import calculate_dtw
 import data_cleaning
 import svm_model
@@ -7,13 +7,13 @@ import svm_model
 """ GENERAL PARAMETER SETTING """
 folder_path = "D:/Google Cloud (60747050S)/Research/Trajectory Analysis/"
 video_name = '1-14'
-filter_name = "mean"  # filter option: mean, median, kalman
+filter_name = "kalman"  # filter option: mean, median, kalman
 
 
 def main():
     """ EXECUTION OPTION SETTING """
     ifDoDataCleaning = False
-    ifDoAnnotate = True
+    ifDoAnnotate = False
     ifDoAnalysis = True
 
     # Data cleaning step
@@ -21,15 +21,15 @@ def main():
         ifPlotTraj = False
         data_cleaning.data_cleaning(folder_path, video_name, filter_name, ifPlotTraj)
     
-    # Annotation step
+    # Training data annotation step
     if ifDoAnnotate:
-        annotation.auto_annotation(folder_path, video_name, filter_name)
-        annotation.sort_annotation_information(folder_path, video_name)
+        annotate_training_data.auto_annotate(folder_path, video_name, filter_name)
+        annotate_training_data.sort_annotation_information(folder_path, video_name)
 
     # Analysis step
     if ifDoAnalysis:
         ifPrintDTWResult = False
-        calculate_dtw.calculate_dtw(folder_path, video_name, filter_name, ifPrintDTWResult)
+        calculate_dtw.dtw_main(folder_path, video_name, filter_name, ifPrintDTWResult)
         svm_model.svm(folder_path, video_name, filter_name)
 
 
