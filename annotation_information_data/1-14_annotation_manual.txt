@@ -140,4 +140,11 @@ lost, 3843-3857
 display, 3858-3902
 bite, 1 catch 0, 3903-3930
 
-, 3933-
+chase?bite?, 1 catch 0, 3933-3953
+ [EXCHANGE NUMBER TAG, 3954-3956]
+chase, 0 cathch 1, 3957-3998
+display, 3999-4010 
+chase, 0 cathch 1, 4011-4028
+ [EXCHANGE TAG, 4029-4032]
+
+, 1 catch 0, 4033-

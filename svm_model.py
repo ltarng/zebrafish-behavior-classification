@@ -2,15 +2,23 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
 def plot_confusion_matrix(confusion_matrix):
-    sns.heatmap(confusion_matrix, square= True, annot=True, cbar= False)
-    plt.xlabel("predicted value")
-    plt.ylabel("true value")
+    classes = ['bite', 'chase', 'circle', 'display', 'normal']
+    sns.heatmap(confusion_matrix, square=True, annot=True, cmap='Blues',
+                xticklabels=classes, yticklabels=classes)
+    # sns.despine(left=False, right=False, top=False, bottom=False)
+
+    plt.title('Confusion Matrix of the Classifier')
+    plt.xlabel("Predicted Value")
+    plt.ylabel("True Value")
+    plt.tight_layout()
+
+    plt.savefig('confusion_matrix.png')
     plt.show()
 
 
