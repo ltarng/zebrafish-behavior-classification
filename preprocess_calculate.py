@@ -4,53 +4,87 @@ from dtaidistance import dtw_ndim
 import math
 
 
+def calculate_moving_direction(p0, p1):
+    # direction_dict = {'Still':0, 'Right': 1, 'RightUp': 2, 'Up':3, 'LeftUp':4, 'Left':5, 'LeftDown':6, 'Down':7, 'RightDown':8}
+    x_shift = p1[0] - p0[0]
+    y_shift = p1[1] - p0[1]
+
+    if x_shift > 0:
+        if y_shift > 0:
+            direction = "NE"
+        elif y_shift < 0:
+            direction = "SE"
+        else:  # y_shift == 0
+            direction = "E"
+    elif x_shift < 0:
+        if y_shift > 0:
+            direction = "NW"
+        elif y_shift < 0:
+            direction = "SW"
+        else:
+            direction = "W"
+    else:  # x_shift == 0
+        if y_shift > 0:
+            direction = "N"
+        elif y_shift < 0:
+            direction = "S"
+        else:
+            direction = "Still"
+
+    return direction
+
+
 def getPoint(df_fish_x, df_fish_y, index):
     return [df_fish_x.iloc[index], df_fish_y.iloc[index]]
 
 
-def distance(p1, p2):
+def caculate_distance(p1, p2):
     return round(math.dist(p1, p2), 2)
 
 
-def calculate_distance_between_frames(folder_path, video_name, filter_name, ifPrintDistResult):
+def calculate_distance_and_direction(folder_path, video_name, filter_name):
+    ### Calculate distance and direction between frames
     # Read trajectory data
     resource_folder = folder_path + "training_data/"
     file_path = resource_folder + video_name + "_" + filter_name + "_filtered_annotated.csv"
     df = pd.read_csv(file_path)
 
     # Add a new column name 'FishN_velocity' in anno_df, and set default values with 0
-    df['Fish0_velocity'] = 0
-    df['Fish1_velocity'] = 0
+    df['Fish0_moving_distance'] = 0
+    df['Fish1_moving_distance'] = 0
+    df['Fish0_moving_direction'] = 0
+    df["Fish1_moving_direction"] = 0
 
     # use temporary variable to prevent SettingWithCopyWarning problem
-    temp_df0 = df['Fish0_velocity'].copy()
-    temp_df1 = df['Fish1_velocity'].copy()
+    temp_df0 = df['Fish0_moving_distance'].copy()
+    temp_df1 = df['Fish1_moving_distance'].copy()
+    temp_df2 = df['Fish0_moving_direction'].copy()
+    temp_df3 = df["Fish1_moving_direction"].copy()
 
-    # Calculate DTW  in the same trajectory interval between two trajectories
+    # Calculate moving distance in the same trajectory interval between two trajectories
     for index in range(0, len(df.index)-1):
         # calculate the distance between: frame n to frame n+1 
-        fish0_dist = distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-        fish1_dist = distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
-
-        temp_df0.iloc[index] = fish0_dist
-        temp_df1.iloc[index] = fish1_dist
-
-        if ifPrintDistResult:
-            print("From frame " + str(index) + " to " + str(index+1))
-            print("Fish0 distance: " + str(fish0_dist) + " Fish1 distance: " + str(fish1_dist))
-
+        temp_df0.iloc[index] = caculate_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+        temp_df1.iloc[index] = caculate_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+        
+        # calculate the moving direction
+        temp_df2.iloc[index] = calculate_moving_direction(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+        temp_df3.iloc[index] = calculate_moving_direction(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+        
     # Remeber to save the result from the temporary variable
-    df['Fish0_velocity'] = temp_df0.copy()
-    df['Fish1_velocity'] = temp_df1.copy()
+    df['Fish0_moving_distance'] = temp_df0.copy()
+    df['Fish1_moving_distance'] = temp_df1.copy()
+    df['Fish0_moving_direction'] = temp_df2.copy()
+    df["Fish1_moving_direction"] = temp_df3.copy()
 
     # Save the result into a csv file
-    df.to_csv(video_name + "_" + filter_name + "_velocity_result.csv", index = False)
-    print("Complete velocity calculation.")
+    df.to_csv(video_name + "_" + filter_name + "_basic_result.csv", index = False)
+    print("Complete distance calculation.")
     print("The file had been saved in: " + folder_path)
     print("\n")
 
 
-def avg_velocity(start_frame, end_frame, traj_df):
+def caculate_avg_velocity(start_frame, end_frame, traj_df):
     avg_dist_fish0 = round(traj_df[start_frame:end_frame, 6].mean(), 2)
     avg_dist_fish1 = round(traj_df[start_frame:end_frame, 7].mean(), 2)
     return avg_dist_fish0, avg_dist_fish1
@@ -65,7 +99,7 @@ def dtw_same_interval(start_frame, end_frame, traj_df):
 
 def calculate_main(folder_path, video_name, filter_name):
     # Read trajectory data
-    file_path = folder_path + video_name + "_" + filter_name + "_velocity_result.csv"
+    file_path = folder_path + video_name + "_" + filter_name + "_basic_result.csv"
     traj_coordinate_df = np.genfromtxt(file_path, delimiter=",", dtype=int, skip_header=1)
 
     # Reading annotation file
@@ -93,7 +127,7 @@ def calculate_main(folder_path, video_name, filter_name):
         temp_dtw_df.iloc[index] = dtw_distance
 
         # calculate average velocity in a trajectory
-        avg_velocity_fish0, avg_velocity_fish1 = avg_velocity(start_frame, end_frame, traj_coordinate_df)
+        avg_velocity_fish0, avg_velocity_fish1 = caculate_avg_velocity(start_frame, end_frame, traj_coordinate_df)
         temp_avgv_fish0_df.iloc[index] = avg_velocity_fish0
         temp_avgv_fish1_df.iloc[index] = avg_velocity_fish1
 

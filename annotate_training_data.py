@@ -4,6 +4,9 @@ import pandas as pd
 def auto_annotate(folder_path, video_name, filter_name):
     ## Annotate the file after data cleaning [Path> ./cleaned_data/videoname_filtername_filtered.csv]
     # Read annotation information file
+    # folder_path = "D:/Google Cloud (60747050S)/Research/Trajectory Analysis/"
+    # video_name = "1-14"
+
     anno_resource_folder = folder_path + "annotation_information_data/"
     anno_info_file_path = anno_resource_folder + video_name + "_annotation_information.csv"
     anno_df = pd.read_csv(anno_info_file_path)

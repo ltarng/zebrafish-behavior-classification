@@ -13,8 +13,8 @@ filter_name = "mean"  # filter option: mean, median, kalman
 def main():
     """ EXECUTION OPTION SETTING """
     ifDoDataCleaning = False
-    ifDoPreprocess = False
-    ifDoAnnotate = False
+    ifDoPreprocess = True
+    ifDoAnnotate = True
     ifDoAnalysis = True
 
     # Data cleaning step
@@ -23,8 +23,7 @@ def main():
         data_cleaning.data_cleaning(folder_path, video_name, filter_name, ifPlotTraj)
 
     if ifDoPreprocess:
-        ifPrintDistResult = False
-        preprocess_calculate.calculate_distance_between_frames(folder_path, video_name, filter_name, ifPrintDistResult)
+        preprocess_calculate.calculate_distance_and_direction(folder_path, video_name, filter_name)
     
     # Training data annotation step
     if ifDoAnnotate:
@@ -34,8 +33,8 @@ def main():
     # Analysis step
     if ifDoAnalysis:
         preprocess_calculate.calculate_main(folder_path, video_name, filter_name)
-        svm_model.svm(folder_path, video_name, filter_name)
-        # svm_model.random_forest(folder_path, video_name, filter_name)
+        # svm_model.svm(folder_path, video_name, filter_name)
+        svm_model.random_forest(folder_path, video_name, filter_name)
 
 
 if __name__ == '__main__':
