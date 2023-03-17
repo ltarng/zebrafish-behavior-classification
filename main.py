@@ -1,7 +1,7 @@
 import annotate_training_data
 import preprocess_calculate
 import data_cleaning
-import svm_model
+import ml_model
 
 
 """ GENERAL PARAMETER SETTING """
@@ -13,7 +13,7 @@ filter_name = "mean"  # filter option: mean, median, kalman
 def main():
     """ EXECUTION OPTION SETTING """
     ifDoDataCleaning = False
-    ifDoPreprocess = True
+    ifDoPreprocess = False
     ifDoAnnotate = True
     ifDoAnalysis = True
 
@@ -33,8 +33,8 @@ def main():
     # Analysis step
     if ifDoAnalysis:
         preprocess_calculate.calculate_main(folder_path, video_name, filter_name)
-        # svm_model.svm(folder_path, video_name, filter_name)
-        svm_model.random_forest(folder_path, video_name, filter_name)
+        # ml_model.svm(folder_path, video_name, filter_name)
+        ml_model.random_forest(folder_path, video_name, filter_name)
 
 
 if __name__ == '__main__':

@@ -74,7 +74,7 @@ circle, 3158-3207
 
 chase, fish 1 catch fish 0, 3200-3210
 bite?, fish 0 catch fish 1, 3211-3233
-normal?, 3234-3299
+normal?, 3234-3299 
 
 chase, fish 0 catch fish 1, 3260-3320
 display, 3321-3388
@@ -125,4 +125,83 @@ display, 4655-4662
 circle, 4663-4727
 circle, 4728-4767
 chase, 1 catch 0, 4768-4835
+
+Or only chase [between 4836-4908]
+[[[chase, 1 catch 0, 4836-4849
+display, 4850-4854
+chase, 1 catch 0, 4855-4866
+display, 4867-4871
+chase, 1 catch 0, 4872-4908]]]
+
+ [EXCHANGE NUMBER TAG, 4909]
+bite, 1 catch 0, 4910-4958
+ [EXCHANGE NUM TAG, 4959-4961]
+????, 4962-4971
+ [EXCHANGE NUM TAG, 4974]
+chase, 1 catch 0, 4988-5024
+display, 5025-5041
+ [overlapping, 5042-5044]
+display, 5045-5056
+ [overlapping, 5057-5060]
+
+ [overlapping, 5067-5071]
+chase, 1 catch 0, 5072-5090
+chase, 1 catch 0, 5091-5147
+display, 5148-5158
+chase, 1 catch 0, 5159-5172
+display, 5173-5181
+chase? 1 catch 0, 5182-5206
+chase, 1 catch 0, 5207-5230
+chase, 1 catch 0, 5231-5290
+chase, 1 catch 0, 5291-5369
+ [EXCHANGE NUMBER TAG without overlap, 5372-5373]
+circle, 5390-5403
+display, 5610-5638
+
+-
+
+display, 6160-6260
+display, 6360-6470
+display, 6479-6500
+display, 6567-6613
+bite, 6620-6638
+display, 6770-6810
+normal, 7131-7200
+display, 7600-7641
+chase, 1 catch 0, 7775-7795
+display, 7798-7826
+display, 7863-7919
+display, 8374-8425
+display, 8682-8870
+display, 8871-8938
+chase, 1 catch 0, 9284-9304
+circle, 9393-9448 [exchange at 9446-9448, manual fixed] 
+ [do not use] circle?,9454,9489 [exchange at 9475~]
+bite,9746,9776
+circle?,9861,9875
+display?,9909,9950
+bite?,9951,9996
+normal?, 10121-10165
+normal?, 10223-10275
+[tracking lost of fish 1, around 10692-11185]
+display, 11520-11562
+bite, 11593-11635
+display, 11730-11767
+bite?,12002-12013
+circle, 12056-12077
+bite,12078-12129
+display, 12209-12240
+bite, 12242-12264
+circle?display?, 12265-12316
+display?, 12367-12395
+display?, 12396-12450
+circle, 12479-12543
+display?, 12555-12617
+bite, 12618-12674?
+bite, 12782-12831
+display, 12860-12887
+bite, 12888-12899
+bite, 12923-12944
+chase, 0 catch 1,12945-12977
+
 
