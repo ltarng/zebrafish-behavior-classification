@@ -23,57 +23,9 @@ def plot_confusion_matrix(confusion_matrix, pic_name):
     plt.show()
 
 
-def svm(folder_path, video_name, filter_name):
-    # Read DTW result file
+def machine_learning_main(folder_path, video_name, filter_name, model_name, feature):
+    # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    feature = "dtw"
-    # feature = "velocity"
-    # feature = "movement_length"
-    # feature = "movement_length_difference"
-    # feature = "all"
-
-    # Divide data into trainging data and testing data
-    if feature == "dtw":
-        X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
-        pic_name = "SVM_dtw_feature_confusion_matrix.png"
-    elif feature == "velocity":
-        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1']))
-        pic_name = "SVM_velocity_feature_confusion_matrix.png"
-    elif feature == "movement_length":
-        X = np.column_stack((df['movement_length_fish0'], df['movement_length_fish1']))
-        pic_name = "SVM_movement_length_feature_confusion_matrix.png"
-    elif feature == "movement_length_difference":
-        X = np.vstack( df['movement_length_differnece'].to_numpy() )
-        pic_name = "SVM_movement_length_diff_feature_confusion_matrix.png"
-    else:
-        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['movement_length_fish0'], df['movement_length_fish1'], df['movement_length_differnece'], df['DTW_distance']))
-        pic_name = "SVM_all_feature_confusion_matrix.png"
-    y = df['BehaviorType']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
-
-    # Use Support Vector Classifier to build model
-    model = SVC()
-    model.fit(X_train, y_train)
-
-    # Use test data to test the result of model
-    predictions = model.predict(X_test)
-
-    # Load classification_report & confusion_matrix to estimate the performance of model
-    cm = confusion_matrix(y_test, predictions)
-
-    # Show the SVM result
-    print(classification_report(y_test, predictions))
-    plot_confusion_matrix(cm, pic_name)
-
-
-def random_forest(folder_path, video_name, filter_name):
-    # Read DTW result file
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    feature = "dtw"
-    # feature = "velocity"
-    # feature = "movement_length"
-    # feature = "movement_length_difference"
-    # feature = "all"
 
     # Divide data into trainging data and testing data
     if feature == "dtw":
@@ -88,21 +40,31 @@ def random_forest(folder_path, video_name, filter_name):
     elif feature == "movement_length_difference":
         X = np.vstack( df['movement_length_differnece'].to_numpy() )
         pic_name = "RF_movement_length_diff_feature_confusion_matrix.png"
+    elif feature == "movement_length_features":
+        X = np.column_stack((df['movement_length_fish0'], df['movement_length_fish1'],df['movement_length_differnece']))
+        pic_name = "RF_movementlength_all_feature_confusion_matrix.png"
     else:
         X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['movement_length_fish0'], df['movement_length_fish1'], df['movement_length_differnece'], df['DTW_distance']))
         pic_name = "RF_all_feature_confusion_matrix.png"
 
+    # Split training data
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
 
-    # Use Random Forest Classifier to build model
-    model = RandomForestClassifier(n_estimators=1000)
+    # Training
+    if model_name == "SVM":
+        model = SVC()
+    elif model_name == "RandomForest":
+        model = RandomForestClassifier(n_estimators=1000)
+    else:
+        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+
     model.fit(X_train, y_train)
 
+    # Testing
     predictions = model.predict(X_test)
 
-    cm = confusion_matrix(y_test, predictions)
-
-    # Show confusion matrix
+    # Show result and confusion matrix graph
     print(classification_report(y_test, predictions))
+    cm = confusion_matrix(y_test, predictions)
     plot_confusion_matrix(cm, pic_name)

@@ -33,8 +33,17 @@ def main():
 
     # Analysis step
     if ifDoAnalysis:
-        # ml_model.svm(folder_path, video_name, filter_name)
-        ml_model.random_forest(folder_path, video_name, filter_name)
+        model_name = "SVM"
+        # model_name = "RandomForest"
+
+        # feature = "dtw"
+        # feature = "velocity"
+        # feature = "movement_length"
+        # feature = "movement_length_difference"
+        # feature = "movement_length_features"
+        feature = "all"
+
+        ml_model.machine_learning_main(folder_path, video_name, filter_name, model_name, feature)
 
 
 if __name__ == '__main__':
