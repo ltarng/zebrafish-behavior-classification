@@ -204,4 +204,70 @@ bite, 12888-12899
 bite, 12923-12944
 chase, 0 catch 1,12945-12977
 
+-
+3/17
+bite?display?,12982,13074
+  [lost,-13173]
+display,13185,13300
+bite, 13337,13368
+bite, 13390,13429
+bite, 13430,13498
+chase?,13539,13554
+  [lost,13599-13891]
+chase,13918,13945 (??)
+chase,13954,13976
+display?,14141,14210
+  [lost, 14424-14594]
+normal?,14913,14955
+normal?,15022,15099 (more not sure)
+chase?,15136,15162 (but slow)
+display,15205,15225
+  [lost, 15238-15303]
+chase, 15535,15560
+bite, 15816,15846
+display?,15864,15920
+  chase, 15939,15955 (some of frame freeze)
+  [lost, 15991,16105]
+bite,16277,16304
+  chase,16305,16321
+  [lost,16891,17672]
+normal?,18168,18196
+  [lost, 18197,18215]
+ display?non-display?,18229,18250
+display?,18341,18372
+  [lost,18737,19657]
+normal,19795,19852
+display,19865,19918
+  [lost,19919,19942]
+  [lost,20135,20296]
+display,20311,20357
+normal,20425,20467
+  [lost,20468,20488]
+normal,20489,20514
+  [lost,20515,20544]
+normal,20594,20618 (short)
+display?,20638,20701
+  [lost,21288,21626]
+  chase,21669,21693
+normal,21708,21758
+normal,21774,21834
 
+-
+3/19
+normal,21867,21953
+  display?,22115,22178
+display?,22230,22280
+circle?,22281,22317
+  [lost,22339,22545]
+bite,23125,23141
+display,23465,23515
+bite?chase?,23855,23874
+normal,24401,24504
+normal,24505,24537
+display?,24754,24790
+display?,24997,25018
+normal,25055,25100
+bite?,25187,25229
+  [lost,25439,25454]
+  [lost,25602,25688]
+normal?,25736,25776 (is the fish being far away because they afraid of the other one?)

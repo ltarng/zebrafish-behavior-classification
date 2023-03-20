@@ -69,6 +69,7 @@ def one_trajectory_to_images(trajectory_type, df):
         output_filename = header_output_filename + str(interval_frames*i) + "-" + str(interval_frames*(i+1)) + ".png"
         save_path = "D:/Trajectory(image)/" + output_filename
         plt.savefig(save_path, dpi=200)
+        plt.close()
 
 
 def show_all_trajectory(trajectory_type, filename, df):
@@ -89,6 +90,7 @@ def show_all_trajectory(trajectory_type, filename, df):
     plt.ylim(yaxis_range)
 
     plt.show()
+    plt.close()
 
 
 def getTrajectoryAnnotationInfo(anno_df, index):
@@ -128,6 +130,7 @@ def plot_one_fight_trajecory(df, behavior_type, start_frame, end_frame):  # Only
     output_filename = header_output_filename + str(start_frame) + "-" + str(end_frame) + ".png"
     save_path = "D:/Trajectory(image)/" + output_filename
     plt.savefig(save_path, dpi=200)
+    plt.close()
 
 
 def plot_fight_trajectory_to_images(df):  # unfinished, it just copy from the ONE_TRAJECTORY

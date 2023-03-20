@@ -26,9 +26,11 @@ def plot_confusion_matrix(confusion_matrix, pic_name):
 def svm(folder_path, video_name, filter_name):
     # Read DTW result file
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    # feature = "dtw"
+    feature = "dtw"
     # feature = "velocity"
-    feature = "both"
+    # feature = "movement_length"
+    # feature = "movement_length_difference"
+    # feature = "all"
 
     # Divide data into trainging data and testing data
     if feature == "dtw":
@@ -37,9 +39,15 @@ def svm(folder_path, video_name, filter_name):
     elif feature == "velocity":
         X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1']))
         pic_name = "SVM_velocity_feature_confusion_matrix.png"
+    elif feature == "movement_length":
+        X = np.column_stack((df['movement_length_fish0'], df['movement_length_fish1']))
+        pic_name = "SVM_movement_length_feature_confusion_matrix.png"
+    elif feature == "movement_length_difference":
+        X = np.vstack( df['movement_length_differnece'].to_numpy() )
+        pic_name = "SVM_movement_length_diff_feature_confusion_matrix.png"
     else:
-        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['DTW_distance']))
-        pic_name = "SVM_both_feature_confusion_matrix.png"
+        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['movement_length_fish0'], df['movement_length_fish1'], df['movement_length_differnece'], df['DTW_distance']))
+        pic_name = "SVM_all_feature_confusion_matrix.png"
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
 
@@ -61,9 +69,11 @@ def svm(folder_path, video_name, filter_name):
 def random_forest(folder_path, video_name, filter_name):
     # Read DTW result file
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    # feature = "dtw"
-    feature = "velocity"
-    # feature = "both"
+    feature = "dtw"
+    # feature = "velocity"
+    # feature = "movement_length"
+    # feature = "movement_length_difference"
+    # feature = "all"
 
     # Divide data into trainging data and testing data
     if feature == "dtw":
@@ -72,9 +82,16 @@ def random_forest(folder_path, video_name, filter_name):
     elif feature == "velocity":
         X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1']))
         pic_name = "RF_velocity_feature_confusion_matrix.png"
+    elif feature == "movement_length":
+        X = np.column_stack((df['movement_length_fish0'], df['movement_length_fish1']))
+        pic_name = "RF_movement_length_feature_confusion_matrix.png"
+    elif feature == "movement_length_difference":
+        X = np.vstack( df['movement_length_differnece'].to_numpy() )
+        pic_name = "RF_movement_length_diff_feature_confusion_matrix.png"
     else:
-        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['DTW_distance']))
-        pic_name = "RF_both_feature_confusion_matrix.png"
+        X = np.column_stack((df['avg_velocity_fish0'], df['avg_velocity_fish1'], df['movement_length_fish0'], df['movement_length_fish1'], df['movement_length_differnece'], df['DTW_distance']))
+        pic_name = "RF_all_feature_confusion_matrix.png"
+
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=99)
 
