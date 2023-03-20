@@ -1,5 +1,5 @@
 import pandas as pd
-from progress.bar import Bar
+from progress.bar import IncrementalBar
 
 
 def auto_annotate(folder_path, video_name, filter_name):
@@ -15,7 +15,7 @@ def auto_annotate(folder_path, video_name, filter_name):
     df['Behavior'] = 0
 
     # Automatic annotate the trajectory data
-    with Bar('Progress of Annotation', max=len(anno_df.index)) as bar:
+    with IncrementalBar('Progress of Annotation', max=len(anno_df.index)) as bar:
         for index in range(0, len(anno_df.index)):
             behavior_type = anno_df['BehaviorType'].iloc[index]
             start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]

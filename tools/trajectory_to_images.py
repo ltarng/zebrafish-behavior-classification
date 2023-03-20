@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from progress.bar import IncrementalBar
 
 
 def trajectory_plotting_setting(trajectory_type):
@@ -146,10 +147,12 @@ def plot_fight_trajectory_to_images(df):  # unfinished, it just copy from the ON
     # Make behavior dictionary
     behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
 
-    for index in range(0, len(anno_df.index)):
-        behavior_type, start_frame, end_frame = getTrajectoryAnnotationInfo(anno_df, index)
-        if behavior_type in behavior_dict.keys():
-            plot_one_fight_trajecory(df, behavior_type, start_frame, end_frame)
+    with IncrementalBar('Progress of Saving Trajectory Images:', max=len(anno_df.index)) as bar:
+        for index in range(0, len(anno_df.index)):
+            behavior_type, start_frame, end_frame = getTrajectoryAnnotationInfo(anno_df, index)
+            if behavior_type in behavior_dict.keys():
+                plot_one_fight_trajecory(df, behavior_type, start_frame, end_frame)
+            bar.next()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from dtaidistance import dtw_ndim
 import math
-from progress.bar import Bar
+from progress.bar import IncrementalBar
 
 
 def calculate_moving_direction(p0, p1):
@@ -108,7 +108,7 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):
     # temp_df3 = df["Fish1_interframe_moving_direction"].copy()
 
     # Calculate moving distance in the same trajectory interval between two trajectories
-    with Bar('Progress of Basic Caculation', max=len(df.index)) as bar:
+    with IncrementalBar('Progress of Basic Caculation', max=len(df.index)) as bar:
         for index in range(0, len(df.index)-1):
             # calculate the distance between: frame n to frame n+1 
             temp_df0.iloc[index] = caculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
@@ -183,7 +183,7 @@ def calculate_final_result(folder_path, video_name, filter_name):
     # temp_normalized_direction_fish1_df = anno_df["Fish1_interframe_moving_direction_normalized"].copy()
 
     # Calculate some features in the same trajectory interval between two trajectories
-    with Bar('Progress of Final Caculation', max=len(anno_df.index)) as bar:
+    with IncrementalBar('Progress of Final Caculation', max=len(anno_df.index)) as bar:
         for index in range(0, len(anno_df.index)):
             # get a line of interval information from annotation data
             start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
