@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from dtaidistance import dtw_ndim
 import math
+from progress.bar import Bar
 
 
 def calculate_moving_direction(p0, p1):
@@ -107,17 +108,18 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):
     # temp_df3 = df["Fish1_interframe_moving_direction"].copy()
 
     # Calculate moving distance in the same trajectory interval between two trajectories
-    for index in range(0, len(df.index)-1):
-        # calculate the distance between: frame n to frame n+1 
-        temp_df0.iloc[index] = caculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-        temp_df1.iloc[index] = caculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+    with Bar('Progress of Basic Caculation', max=len(df.index)) as bar:
+        for index in range(0, len(df.index)-1):
+            # calculate the distance between: frame n to frame n+1 
+            temp_df0.iloc[index] = caculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+            temp_df1.iloc[index] = caculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
 
-    #### Need to fix these problem, reduce dimension?
-        # calculate the moving direction from frame n to frame n+1
-        # temp_df2.iloc[index] = calculate_moving_direction(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-        # temp_df3.iloc[index] = calculate_moving_direction(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
-    
-        
+        #### Need to fix these problem, reduce dimension?
+            # calculate the moving direction from frame n to frame n+1
+            # temp_df2.iloc[index] = calculate_moving_direction(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+            # temp_df3.iloc[index] = calculate_moving_direction(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+            bar.next()
+
     # Remeber to save the result from the temporary variable
     df['Fish0_interframe_movement_dist'] = temp_df0.copy()
     df['Fish1_interframe_movement_dist'] = temp_df1.copy()
@@ -180,32 +182,33 @@ def calculate_final_result(folder_path, video_name, filter_name):
     # temp_normalized_direction_fish0_df = anno_df['Fish0_interframe_moving_direction_normalized'].copy()
     # temp_normalized_direction_fish1_df = anno_df["Fish1_interframe_moving_direction_normalized"].copy()
 
-
     # Calculate some features in the same trajectory interval between two trajectories
-    for index in range(0, len(anno_df.index)):
-        # get a line of interval information from annotation data
-        start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
+    with Bar('Progress of Final Caculation', max=len(anno_df.index)) as bar:
+        for index in range(0, len(anno_df.index)):
+            # get a line of interval information from annotation data
+            start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
-        # calculate DTW in the same interval (compare the trajectory of fish 0 and fish 1)
-        dtw_distance = dtw_same_interval(start_frame, end_frame, traj_coordinate_df)
-        temp_dtw_df.iloc[index] = dtw_distance
+            # calculate DTW in the same interval (compare the trajectory of fish 0 and fish 1)
+            dtw_distance = dtw_same_interval(start_frame, end_frame, traj_coordinate_df)
+            temp_dtw_df.iloc[index] = dtw_distance
 
-        # calculate average velocity in a trajectory
-        avg_velocity_fish0, avg_velocity_fish1 = caculate_avg_velocity(start_frame, end_frame, traj_coordinate_df)
-        temp_avgv_fish0_df.iloc[index] = avg_velocity_fish0
-        temp_avgv_fish1_df.iloc[index] = avg_velocity_fish1
+            # calculate average velocity in a trajectory
+            avg_velocity_fish0, avg_velocity_fish1 = caculate_avg_velocity(start_frame, end_frame, traj_coordinate_df)
+            temp_avgv_fish0_df.iloc[index] = avg_velocity_fish0
+            temp_avgv_fish1_df.iloc[index] = avg_velocity_fish1
 
-        # calculate movement length in a trajectory
-        movement_length_fish0, movement_length_fish1 = calculate_movement_length(start_frame, end_frame, traj_coordinate_df)
-        temp_movement_length_fish0_df.iloc[index] = movement_length_fish0
-        temp_movement_length_fish1_df.iloc[index] = movement_length_fish1
-        temp_movementl_diff_df.iloc[index] = movement_length_fish0 - movement_length_fish1
+            # calculate movement length in a trajectory
+            movement_length_fish0, movement_length_fish1 = calculate_movement_length(start_frame, end_frame, traj_coordinate_df)
+            temp_movement_length_fish0_df.iloc[index] = movement_length_fish0
+            temp_movement_length_fish1_df.iloc[index] = movement_length_fish1
+            temp_movementl_diff_df.iloc[index] = movement_length_fish0 - movement_length_fish1
 
-        # calculate a direction feature in a trajectory
-        # fish0_direction_normalized_matrix, fish1_direction_normalized_matrix = caculate_normalized_matrix_direction(start_frame, end_frame, traj_coordinate_df)
-        # temp_normalized_direction_fish0_df.iloc[index] = fish0_direction_normalized_matrix
-        # temp_normalized_direction_fish1_df.iloc[index] = fish1_direction_normalized_matrix
+            # calculate a direction feature in a trajectory
+            # fish0_direction_normalized_matrix, fish1_direction_normalized_matrix = caculate_normalized_matrix_direction(start_frame, end_frame, traj_coordinate_df)
+            # temp_normalized_direction_fish0_df.iloc[index] = fish0_direction_normalized_matrix
+            # temp_normalized_direction_fish1_df.iloc[index] = fish1_direction_normalized_matrix
 
+            bar.next()
 
     # Remeber to save the result from the temporary variable
     anno_df["DTW_distance"] = temp_dtw_df.copy()

@@ -1,4 +1,5 @@
 import pandas as pd
+from progress.bar import Bar
 
 
 def auto_annotate(folder_path, video_name, filter_name):
@@ -14,18 +15,21 @@ def auto_annotate(folder_path, video_name, filter_name):
     df['Behavior'] = 0
 
     # Automatic annotate the trajectory data
-    for index in range(0, len(anno_df.index)):
-        behavior_type = anno_df['BehaviorType'].iloc[index]
-        start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
+    with Bar('Progress of Annotation', max=len(anno_df.index)) as bar:
+        for index in range(0, len(anno_df.index)):
+            behavior_type = anno_df['BehaviorType'].iloc[index]
+            start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
-        # Make behavior dictionary
-        behavior_dict = {'lost': -1, 'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
-        
-        # Annotate a behavior
-        if behavior_type in behavior_dict.keys():
-            df['Behavior'].iloc[start_frame:end_frame] = behavior_dict[behavior_type]
-        else:
-            df['Behavior'].iloc[start_frame:end_frame] = 100
+            # Make behavior dictionary
+            behavior_dict = {'lost': -1, 'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
+            
+            # Annotate a behavior
+            if behavior_type in behavior_dict.keys():
+                df['Behavior'].iloc[start_frame:end_frame] = behavior_dict[behavior_type]
+            else:
+                df['Behavior'].iloc[start_frame:end_frame] = 100
+            
+            bar.next()
 
     # Save the annoatated data
     save_path = folder_path + "training_data/"
