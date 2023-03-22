@@ -1,5 +1,4 @@
 import pandas as pd
-from progress.bar import IncrementalBar
 
 
 def auto_annotate(folder_path, video_name, filter_name):
