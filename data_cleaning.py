@@ -3,6 +3,7 @@ import plot_trajectory
 import numpy as np
 import pandas as pd
 import sys
+import os
 
 import scipy.ndimage as sn
 import scipy.signal as ss
@@ -10,9 +11,7 @@ from pykalman import KalmanFilter
 
 
 def mean_filter(df, window_len):
-    # declare a dataframe format variable
     df_filtered = pd.DataFrame()
-
     df_filtered['Fish0_x'] = sn.uniform_filter(df['Fish0_x'], size = window_len)
     df_filtered['Fish0_y'] = sn.uniform_filter(df['Fish0_y'], size = window_len)
     df_filtered['Fish1_x'] = sn.uniform_filter(df['Fish1_x'], size = window_len)
@@ -21,9 +20,7 @@ def mean_filter(df, window_len):
 
 
 def median_filter(df, window_len):
-    # declare a dataframe format variable
     df_filtered = pd.DataFrame()
-
     df_filtered['Fish0_x'] = ss.medfilt(df['Fish0_x'], kernel_size = window_len)
     df_filtered['Fish0_y'] = ss.medfilt(df['Fish0_y'], kernel_size = window_len)
     df_filtered['Fish1_x'] = ss.medfilt(df['Fish1_x'], kernel_size = window_len)
@@ -86,7 +83,10 @@ def kalman_filter(df):
 
 
 def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
+    # Setting save file path. If folder is not exist, create a new one
     save_folder = folder_path + "cleaned_data/"
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
     
     # Read from resource
     resource_folder = folder_path + "raw_data/"
@@ -110,5 +110,5 @@ def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
     print("Complete data cleaning by " + filter_name + " filter.")
     print("The file had been saved in: " + save_folder + "\n")
 
-    if ifPlotTraj == True:
+    if ifPlotTraj:
         plot_trajectory.plot_trajectory(video_name, df, df_filtered)
