@@ -204,8 +204,6 @@ bite, 12888-12899
 bite, 12923-12944
 chase, 0 catch 1,12945-12977
 
--
-3/17
 bite?display?,12982,13074
   [lost,-13173]
 display,13185,13300
@@ -251,9 +249,6 @@ display?,20638,20701
   chase,21669,21693
 normal,21708,21758
 normal,21774,21834
-
--
-3/19
 normal,21867,21953
   display?,22115,22178
 display?,22230,22280
@@ -271,3 +266,16 @@ bite?,25187,25229
   [lost,25439,25454]
   [lost,25602,25688]
 normal?,25736,25776 (is the fish being far away because they afraid of the other one?)
+
+  display?,25933,25970
+bite,26035,26062
+  [lost,26120,26329]
+bite,26413,26436
+bite?,26452,26512
+bite?,26517,26540
+  [lost,27051,207078]
+  display?,27120,27150
+bite?,27300,27347
+normal?,27616,27670
+normal?,27911,27957
+  [lost,28047,30112(end)]

@@ -1,0 +1,57 @@
+fight - 1-22_2nd
+-
+  [lost,1,110]
+ being far away from another fish, 111,615
+
+bite?,680,730
+bite?,735,840
+  display,850,905
+  display,1215,1280
+  [lost,1288,1298]
+  [lost,1306,1356]
+bite,1383,1419
+  display?,1420,1495
+  [lost,1496,1539]
+  [lost,1587,1656]
+  display,1700,1758
+  display,1794,1851
+  display,1956,2010
+  [lost,2210,2292]
+  display,2790,2817
+  [lost,2983,3041]
+bite,3093,3152 [exchange from 3121 to 3133,fixed (exactly, 3121-3174, but still haven't fix the problem from 3134-3176)]
+bite,3153,3201
+  [lost,3214,3795] 4:30
+bite,3804,3856 [need to check if have exchange]
+bite,3882,3933 [need to check]
+bite,3934,3993 [need to check]
+bite,4101,4154 [need to check]
+  [lost,4154,4179]
+  bite,4223,4248 [need to check]
+  bite,4277,4323 [need to check]
+  [lost,4331,4345]
+  [lost,4369,4464]
+  bite,4497,4532 [need to check]
+
+full of biting
+  [lost,6997,7048]
+
+  circle?display?,7112,7138 [very unsure]
+normal?,7484,7545
+  [lost,8530,8543]
+normal?,8649,8684
+normal?,8670,8756
+normal?,9041,9076
+
+-
+3/22
+  display?,9188,9255
+  [lost,9478,9558]
+normal?,9644,9689
+  display,10060,10083
+circle,10209,10232
+normal,10341,10389
+normal?,10420,10505
+normal?,10855,10892
+normal?,10898,10958
+normal?,11305,11376
