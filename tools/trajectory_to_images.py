@@ -26,9 +26,7 @@ def trajectory_plotting_setting(trajectory_type):
         elif(trajectory_type == "novel_tank"):
             number_of_intervals = 90
 
-    # Calculate number of interval frames
-    interval_frames = interval_duration * fps
-
+    interval_frames = interval_duration * fps  # Calculate number of interval frames
     return number_of_intervals, interval_frames, interval_duration
 
 
@@ -42,7 +40,6 @@ def size_of_border_setting(trajectory_type):
     elif(trajectory_type == "fighting"):
         xlim = [230, 1800]
         ylim = [290, 980]
-    
     return xlim, ylim
 
 
