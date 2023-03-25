@@ -72,9 +72,11 @@ def calculate_moving_direction(p0, p1):
 
 
 def caculate_normalized_matrix_direction(start_frame, end_frame, traj_df):
+    # Calculate the normalized cumularive-direction(directions in a trajectory) of fish0
     fish0_cumulative_value = traj_df[start_frame:end_frame, 8].sum()
     fish0_direction_normalized = fish0_cumulative_value / np.linalg.norm(fish0_cumulative_value)
 
+    # Calculate the normalized cumularive-direction(directions in a trajectory) of fish1
     fish1_cumulative_value = traj_df[start_frame:end_frame, 9].sum()
     fish1_direction_normalized = fish1_cumulative_value / np.linalg.norm(fish1_cumulative_value)
 
@@ -134,9 +136,7 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calc
 
     # Save the basic information (basic result) into a csv file
     df.to_csv(save_folder + video_name + "_" + filter_name + "_basic_result.csv", index = False)
-    print("Complete distance calculation.")
-    print("The file had been saved in: " + folder_path)
-    print("\n")
+    print("Complete distance calculation. The file had been saved in: " + folder_path + "\n")
 
 
 def dtw_same_interval(start_frame, end_frame, traj_df):
