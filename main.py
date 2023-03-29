@@ -16,7 +16,7 @@ def main():
     ifDoDataCleaning = False
     ifDoAnnotate = False
     ifDoPreprocess = False
-    ifDoCombine = True
+    ifDoCombine = False
     ifDoAnalysis = True
 
     # Data cleaning step
@@ -31,16 +31,17 @@ def main():
             annotate_training_data.auto_annotate(folder_path, video_names[index], filter_name)
             annotate_training_data.sort_annotation_information(folder_path, video_names[index])
 
+    # Calculate the features for classification (analysis step)
     if ifDoPreprocess:
         for index in range(0, len(video_names)):
             preprocess_calculate.calculate_semifinished_result(folder_path, video_names[index], filter_name)
             preprocess_calculate.calculate_final_result(folder_path, video_names[index], filter_name)
 
-    # # Combine cleaned data from different video
+    # Combine cleaned data from different video
     if ifDoCombine:
         combine_data.combine_preprocessed_files(folder_path, video_names, filter_name)
 
-    # Analysis step
+    # Analysis step1
     if ifDoAnalysis:
         model_name = "SVM"
         # model_name = "RandomForest"
@@ -53,7 +54,7 @@ def main():
         feature = "all"
 
         # ml_model.machine_learning_main(folder_path, video_name, filter_name, model_name, feature)
-        ml_model.machine_learning_main(folder_path, "Combined", filter_name, model_name, feature)
+        ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature)
 
 
 if __name__ == '__main__':
