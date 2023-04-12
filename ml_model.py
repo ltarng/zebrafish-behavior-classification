@@ -16,6 +16,8 @@ def getFeaturesData(feature, df):
         X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
     elif feature == "velocity":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
+    elif feature == "dtw_and_velocity":
+        X = np.column_stack((df['DTW_distance'], df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
     elif feature == "movement_length":
         X = np.column_stack((df['Fish0_movement_length'], df['Fish1_movement_length']))
     elif feature == "movement_length_difference":
@@ -142,7 +144,8 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
 
-    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
+    # 10-fold  cross validation
+    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
 
     # Show the testing result with confusion matrix
@@ -158,6 +161,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     # sorted_labels = ['bite', 'chase', 'circle', 'display', 'normal']
     sorted_labels = ['bite', 'chase', 'display', 'normal']
     plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+
 
 def machine_learning_cross_validation_test(folder_path, video_name, filter_name, model_name, feature):
     # Read preprocessed trajectory data

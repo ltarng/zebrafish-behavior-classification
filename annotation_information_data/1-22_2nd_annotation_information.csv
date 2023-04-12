@@ -1,4 +1,4 @@
-BehaviorType,StartFrame,EndFrame
+BehaviorName,StartFrame,EndFrame
 bite,680,720
 bite,735,840
 bite,1383,1419
@@ -23,3 +23,5 @@ normal,11453,11525
 normal,11893,11942
 normal,12011,12114
 normal,12467,12508
+normal,12549,12649
+normal,12766,12805
