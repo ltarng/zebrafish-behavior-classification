@@ -51,18 +51,18 @@ def sort_annotation_information(folder_path, video_name):
 
     # Convert behavior type from text to integer
     for index in range(0, len(anno_df.index)):
-        behavior_type = anno_df['BehaviorName'].iloc[index]
-        start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
+        behavior_name = anno_df['BehaviorName'].iloc[index]
 
         # Make behavior dictionary
         behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
         
         # Annotate a behavior
-        if behavior_type in behavior_dict.keys():
-            anno_df['BehaviorType'].iloc[start_frame:end_frame] = behavior_dict[behavior_type]
+        if behavior_name in behavior_dict.keys():
+            anno_df['BehaviorType'].iloc[index] = behavior_dict[behavior_name]
+            # print(behavior_name, behavior_dict[behavior_name])
         else:
-            anno_df['BehaviorType'].iloc[start_frame:end_frame] = 100
-            print("Wrong behavior name!" + anno_df['BehaviorType'].iloc[start_frame:end_frame])
+            anno_df['BehaviorType'].iloc[index] = 100
+            print("Wrong behavior name!" + anno_df['BehaviorType'].iloc[index])
 
     # Sort annoatation information file by
     anno_df.sort_values(by=["BehaviorType"], inplace=True)
