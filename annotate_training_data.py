@@ -2,6 +2,11 @@ import pandas as pd
 import os
 
 
+def getBehaviorDict():
+    behavior_dict = {'bite': 1, 'chase': 2, 'circle': 3, 'display': 4, 'normal': 5}
+    return behavior_dict
+
+
 def auto_annotate(folder_path, video_name, filter_name):
     # Read annotation information data
     anno_resource_folder = folder_path + "annotation_information_data/"
@@ -21,7 +26,7 @@ def auto_annotate(folder_path, video_name, filter_name):
         start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
         # Make behavior dictionary
-        behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
+        behavior_dict = getBehaviorDict()
         
         # Annotate a behavior
         if behavior_type in behavior_dict.keys():
@@ -57,7 +62,7 @@ def sort_annotation_information(folder_path, video_name):
         behavior_name = anno_df['BehaviorName'].iloc[index]
 
         # Make behavior dictionary
-        behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
+        behavior_dict = getBehaviorDict()
         
         # Annotate a behavior
         if behavior_name in behavior_dict.keys():

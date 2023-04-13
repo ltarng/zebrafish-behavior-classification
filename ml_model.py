@@ -79,9 +79,9 @@ def create_saving_folder(folder_path):
     return save_folder
 
 
-def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder):
-
-    cm = confusion_matrix(actual_classes, predicted_classes, labels=sorted_labels)
+def plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder):
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
+    cm = confusion_matrix(actual_classes, predicted_classes)
     sns.heatmap(cm, square=True, annot=True, cmap='Blues', xticklabels=sorted_labels, yticklabels=sorted_labels)
     # sns.despine(left=False, right=False, top=False, bottom=False)
 
@@ -97,8 +97,7 @@ def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, mode
 
 def machine_learning_main(folder_path, video_name, filter_name, model_name, feature):
     # Read preprocessed trajectory data
-    # df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_remove_circle.csv')
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -128,15 +127,12 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
         os.makedirs(save_folder)
     
     # Plot the confusion matrix graph on screen, and save it in png format
-    # sorted_labels = ['bite', 'chase', 'circle', 'display', 'normal']
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
+    plot_confusion_matrix(y_test, predictions, model_name, feature, save_folder)
 
 
 def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature):
     # Read preprocessed trajectory data
-    # df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_remove_circle.csv')
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -159,20 +155,18 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     # Show the testing result with confusion matrix
     print(model_name, feature)
     print(classification_report(actual_classes, predicted_classes))
+    print("Class number meaning - 1:bite, 2:chase, 3:circle, 4:display, 5:normal")
 
     # Setting the path and create a folder to save confusion matrix pictures
     save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
-    # sorted_labels = ['bite', 'chase', 'circle', 'display', 'normal']
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+    plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder)
 
 
 def machine_learning_cross_validation_test(folder_path, video_name, filter_name, model_name, feature):
     # Read preprocessed trajectory data
-    # df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_remove_circle.csv')
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
