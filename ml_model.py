@@ -71,6 +71,14 @@ def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) 
     return actual_classes, predicted_classes, predicted_proba
 
 
+def create_saving_folder(folder_path):
+    # Setting the path for saving confusion matrix pictures
+    save_folder = folder_path + "confusion_matrix_picture/"
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+    return save_folder
+
+
 def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder):
 
     cm = confusion_matrix(actual_classes, predicted_classes, labels=sorted_labels)
@@ -152,10 +160,8 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     print(model_name, feature)
     print(classification_report(actual_classes, predicted_classes))
 
-    # Setting the path for saving confusion matrix pictures
-    save_folder = folder_path + "confusion_matrix_picture/"
-    if not os.path.exists(save_folder):
-        os.makedirs(save_folder)
+    # Setting the path and create a folder to save confusion matrix pictures
+    save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
     # sorted_labels = ['bite', 'chase', 'circle', 'display', 'normal']
