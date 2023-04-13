@@ -47,7 +47,7 @@ def sort_annotation_information(folder_path, video_name):
     anno_df = pd.read_csv(anno_info_file_path)
 
     # Remove rows which Behavior is 'circle'
-    anno_df = anno_df[anno_df.BehaviorType != "circle"]
+    anno_df = anno_df[anno_df.BehaviorName != "circle"]
 
     # Set default value in new clolumns "Behavior"
     anno_df['BehaviorType'] = 0
