@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+from time import process_time
 
 
 def getFeaturesData(feature, df):
@@ -150,7 +151,9 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
 
     # 10-fold  cross validation
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    start_time = process_time()
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
+    end_time = process_time()
 
     # Show the testing result with confusion matrix
     print(model_name, feature)
@@ -162,6 +165,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
 
     # Plot the confusion matrix graph on screen, and save it in png format
     plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder)
+    print("Execution time: ", end_time - start_time)
 
 
 def machine_learning_cross_validation_test(folder_path, video_name, filter_name, model_name, feature):
