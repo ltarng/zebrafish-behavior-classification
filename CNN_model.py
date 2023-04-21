@@ -6,7 +6,12 @@ from keras.utils import to_categorical
 from keras.utils.vis_utils import plot_model
 from keras import Input
 from keras.models import Sequential
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+from keras.layers import Conv1D, MaxPooling1D, AveragePooling1D, Flatten, Dense, BatchNormalization, Dropout
+import keras.backend as KB
+
+# Load the TensorBoard notebook extension
+import tensorflow as tf
+import datetime
 
 
 def evaluate_model(X_train, y_train, X_test, y_test, n_filters):
@@ -30,7 +35,7 @@ def evaluate_model(X_train, y_train, X_test, y_test, n_filters):
     return accuracy
 
 
-def cnn_model_1(X_train, y_train):
+def cnn_model_1(X_train, y_train):  # better than model 2
     num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
 
     model = Sequential()
@@ -48,11 +53,38 @@ def cnn_model_2(X_train, y_train):
     model = Sequential()
     model.add(Input(shape=(num_timesteps, num_features)))
     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(AveragePooling1D(pool_size=2, padding="same"))
+    model.add(Flatten())
+    model.add(Dense(num_outputs, activation='softmax'))
+    return model
+
+
+def cnn_model_3(X_train, y_train):  # the best?
+    num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
+
+    model = Sequential()
+    model.add(Input(shape=(num_timesteps, num_features)))
     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))  # not good to add this layer
     model.add(MaxPooling1D(pool_size=2, padding="same"))
     model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
+    model.add(Dense(num_outputs, activation='softmax'))
+    return model
+
+
+def cnn_model_4(X_train, y_train):  # validation test not good
+    num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
+
+    model = Sequential()
+    model.add(Input(shape=(num_timesteps, num_features)))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Flatten())
     model.add(Dense(num_outputs, activation='softmax'))
     return model
 
@@ -69,23 +101,34 @@ def deep_learning_main(folder_path, video_name, filter_name, model_name, feature
     # Reshape data, X_train.shape[0]: number of train data, X_test.shape[0]: number of test data
     X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1]).astype('float32')
     X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1]).astype('float32')
-
     # One-hot encoding, convert class vectors to binary class matrices
     y_train = to_categorical(y_train)
     y_test = to_categorical(y_test)
 
-    model_select = "cnn_1" 
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
+    model_select = "cnn_4"
     # model
     if model_select == "cnn_1":
         model = cnn_model_1(X_train, y_train)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        model.fit(X_train, y_train, validation_split=0.1, batch_size=30, epochs=100, verbose=2)
-    elif model_select == 'cnn_model_2':
-        model = cnn_model_2(X_train, y_train)
+        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
+        # batch_size = 32 is better than batch_size = 16
+    elif model_select == "cnn_2":
+        model = cnn_model_1(X_train, y_train)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        model.fit(X_train, y_train, validation_split=0.1, batch_size=40, epochs=50, verbose=2)
+        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
+    elif model_select == 'cnn_3':
+        model = cnn_model_3(X_train, y_train)
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
+    elif model_select == 'cnn_4':
+        model = cnn_model_4(X_train, y_train)
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
     print(model.summary())
+    print(KB.eval(model.optimizer.lr))
 
     # Predict
     predictions = np.argmax(model.predict(X_test), axis=1)
