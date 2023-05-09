@@ -80,8 +80,7 @@ def create_saving_folder(folder_path):
     return save_folder
 
 
-def plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder):
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
+def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder):
     cm = confusion_matrix(actual_classes, predicted_classes)
     sns.heatmap(cm, square=True, annot=True, cmap='Blues', xticklabels=sorted_labels, yticklabels=sorted_labels)
     # sns.despine(left=False, right=False, top=False, bottom=False)
@@ -128,7 +127,8 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
         os.makedirs(save_folder)
     
     # Plot the confusion matrix graph on screen, and save it in png format
-    plot_confusion_matrix(y_test, predictions, model_name, feature, save_folder)
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
+    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
 
 
 def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature):
@@ -164,7 +164,8 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
-    plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder)
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
 
 
@@ -190,3 +191,49 @@ def machine_learning_cross_validation_test(folder_path, video_name, filter_name,
 
     cv_results = cross_val_score(model, X, y, cv=skfold, scoring='accuracy', verbose=10)
     print("Mean accuracy: ", cv_results.mean(), ", standard deviation", cv_results.std())
+
+
+def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, model_name, feature):
+    # Read preprocessed trajectory data
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_half_bite_chase.csv')
+
+    # Split data into trainging data and testing data
+    X = getFeaturesData(feature, df)
+    y = df['BehaviorType']
+
+    # Combine bite and chase
+    for index in range(0, len(df['BehaviorType'].index)):
+        if df['BehaviorType'].iloc[index] == 1 or df['BehaviorType'].iloc[index] == 2:
+            df['BehaviorType'].iloc[index] = 1
+
+    # Select model and training
+    if model_name == "SVM":
+        kernel_name = choose_SVC_kernel_model()
+        model_name = model_name + '-' + kernel_name
+        model = SVC(kernel=kernel_name)
+    elif model_name == "RandomForest":
+        model = RandomForestClassifier(n_estimators=1000)
+    else:
+        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+
+    # 10-fold  cross validation
+    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    start_time = process_time()
+    actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
+    end_time = process_time()
+
+    # Model name
+    model_name = model_name + "_3categories_only"
+
+    # Show the testing result with confusion matrix
+    print(model_name, feature)
+    print(classification_report(actual_classes, predicted_classes))
+    print("Class number meaning - 1:bite&chase, 4:display, 5:normal")
+
+    # Setting the path and create a folder to save confusion matrix pictures
+    save_folder = create_saving_folder(folder_path)
+
+    # Plot the confusion matrix graph on screen, and save it in png format
+    sorted_labels = ['bite & chase', 'display', 'normal']
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+    print("Execution time: ", end_time - start_time)

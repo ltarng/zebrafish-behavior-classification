@@ -59,14 +59,12 @@ def cnn_model_2(X_train, y_train):
     return model
 
 
-def cnn_model_3(X_train, y_train):  # the best?
+def cnn_model_3(X_train, y_train):  # not the best?
     num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
 
     model = Sequential()
     model.add(Input(shape=(num_timesteps, num_features)))
     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
-    model.add(MaxPooling1D(pool_size=2, padding="same"))
-    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))  # not good to add this layer
     model.add(MaxPooling1D(pool_size=2, padding="same"))
     model.add(Flatten())
     model.add(Dense(num_outputs, activation='softmax'))
@@ -116,7 +114,7 @@ def deep_learning_main(folder_path, video_name, filter_name, model_name, feature
         model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
         # batch_size = 32 is better than batch_size = 16
     elif model_select == "cnn_2":
-        model = cnn_model_1(X_train, y_train)
+        model = cnn_model_2(X_train, y_train)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
     elif model_select == 'cnn_3':
@@ -138,9 +136,10 @@ def deep_learning_main(folder_path, video_name, filter_name, model_name, feature
     save_folder = ml_model.create_saving_folder(folder_path)
     
     # Plot confusion matrix for the result
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
     # print("y_test is: ",y_test, "\npred.  is: ", predictions)
     print(ml_model.classification_report(y_test, predictions))
-    ml_model.plot_confusion_matrix(y_test, predictions, model_name, feature, save_folder)
+    ml_model.plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
 
 
 def getTrainDataInfo(X, y) -> ml_model.Tuple[np.array, np.array, np.array]:
@@ -221,5 +220,6 @@ def cross_val_predict(model, skfold: ml_model.StratifiedKFold, X: np.array, y: n
 #     save_folder = ml_model.create_saving_folder(folder_path)
 
 #     # Plot the confusion matrix graph on screen, and save it in png format
-#     ml_model.plot_confusion_matrix(actual_classes, predicted_classes, model_name, feature, save_folder)
+#     sorted_labels = ['bite', 'chase', 'display', 'normal']
+#     ml_model.plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
 #     print("Execution time: ", end_time - start_time)
