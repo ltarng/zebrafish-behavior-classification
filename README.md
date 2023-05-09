@@ -14,3 +14,6 @@ A system for thesis.
 | matplotlib | 3.6.2 |
 | seaborn | 0.12.1 |
 | progress | 1.6 |
+| tensorflow | 2.12.0 |
+| tensorboard | 2.12.1 |
+| opencv-python | 4.7.0.72 |
