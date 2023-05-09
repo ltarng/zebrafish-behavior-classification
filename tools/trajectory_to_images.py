@@ -151,7 +151,7 @@ def plot_fight_trajectory_to_images(folder_path, traj_type, video_name, filter_n
     with IncrementalBar(progress_bar_title, max=len(anno_df.index)) as bar:  # Execute with progress bar
         for index in range(0, len(anno_df.index)):
             # Get trajectory annotation information
-            behavior_type = anno_df['BehaviorType'].iloc[index]
+            behavior_type = anno_df['BehaviorName'].iloc[index]
             start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
             # Plot a trajectory
