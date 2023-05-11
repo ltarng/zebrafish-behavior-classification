@@ -6,81 +6,18 @@ from progress.bar import IncrementalBar
 import os
 
 
-def calculate_moving_direction(p0, p1):
+def calculate_interframe_vector(p0, p1):
     x_shift = p1[0] - p0[0]
     y_shift = p1[1] - p0[1]
-
-    if x_shift > 0:
-        if y_shift > 0:  # direction: NE
-            direction = np.array([
-                [0,0,1],
-                [0,0,0],
-                [0,0,0]
-            ])
-        elif y_shift < 0:  # direction: SE
-            direction = np.array([
-                [0,0,0],
-                [0,0,0],
-                [0,0,1]
-            ])
-        else:  # direction: E
-            direction = np.array([
-                [0,0,0],
-                [0,0,1],
-                [0,0,0]
-            ])
-    elif x_shift < 0:
-        if y_shift > 0:  # direction: NW
-            direction = np.array([
-                [1,0,0],
-                [0,0,0],
-                [0,0,0]
-            ])
-        elif y_shift < 0:  # direction: SW
-            direction = np.array([
-                [0,0,0],
-                [0,0,0],
-                [1,0,0]
-            ])
-        else:  # direction: W
-            direction = np.array([
-                [0,0,0],
-                [1,0,0],
-                [0,0,0]
-            ])
-    else:  # x_shift == 0
-        if y_shift > 0:  # direction: N
-            direction = np.array([
-                [0,1,0],
-                [0,0,0],
-                [0,0,0]
-            ])
-        elif y_shift < 0:  # direction: S
-            direction = np.array([
-                [0,0,0],
-                [0,0,0],
-                [0,1,0]
-            ])
-        else:  # direction: Still
-            direction = np.array([
-                [0,0,0],
-                [0,1,0],
-                [0,0,0]
-            ])
-
-    return direction
+    return x_shift, y_shift
 
 
-def caculate_normalized_matrix_direction(start_frame, end_frame, traj_df):
-    # Calculate the normalized cumularive-direction(directions in a trajectory) of fish0
-    fish0_cumulative_value = traj_df[start_frame:end_frame, 8].sum()
-    fish0_direction_normalized = fish0_cumulative_value / np.linalg.norm(fish0_cumulative_value)
-
-    # Calculate the normalized cumularive-direction(directions in a trajectory) of fish1
-    fish1_cumulative_value = traj_df[start_frame:end_frame, 9].sum()
-    fish1_direction_normalized = fish1_cumulative_value / np.linalg.norm(fish1_cumulative_value)
-
-    return fish0_direction_normalized, fish1_direction_normalized
+def caculate_direction(start_frame, end_frame, traj_df):
+    fish0_mean_x = round(traj_df[start_frame:end_frame, 8].mean(), 2)
+    fish0_mean_y = round(traj_df[start_frame:end_frame, 9].mean(), 2)
+    fish1_mean_x = round(traj_df[start_frame:end_frame, 10].mean(), 2)
+    fish1_mean_y = round(traj_df[start_frame:end_frame, 11].mean(), 2)
+    return fish0_mean_x, fish0_mean_y, fish1_mean_x, fish1_mean_y
 
 
 def getPoint(df_fish_x, df_fish_y, index):
@@ -100,14 +37,18 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calc
     # Create a new column, and set default values with 0
     df['Fish0_interframe_movement_dist'] = 0
     df['Fish1_interframe_movement_dist'] = 0
-    # df['Fish0_interframe_moving_direction'] = 0
-    # df["Fish1_interframe_moving_direction"] = 0
+    df['Fish0_interframe_moving_direction_x'] = 0
+    df['Fish0_interframe_moving_direction_y'] = 0
+    df["Fish1_interframe_moving_direction_x"] = 0
+    df["Fish1_interframe_moving_direction_y"] = 0
 
     # Use temporary variable to prevent SettingWithCopyWarning problem
     temp_df_fish0_dist = df['Fish0_interframe_movement_dist'].copy()
     temp_df_fish1_dist = df['Fish1_interframe_movement_dist'].copy()
-    # temp_df_fish0_direction = df['Fish0_interframe_moving_direction'].copy()
-    # temp_df_fish1_direction = df["Fish1_interframe_moving_direction"].copy()
+    temp_df_fish0_direction_x = df['Fish0_interframe_moving_direction_x'].copy()
+    temp_df_fish0_direction_y = df['Fish0_interframe_moving_direction_y'].copy()
+    temp_df_fish1_direction_x = df["Fish1_interframe_moving_direction_x"].copy()
+    temp_df_fish1_direction_y = df["Fish1_interframe_moving_direction_y"].copy()
 
     # Calculate moving distance in the same trajectory interval between two trajectories
     with IncrementalBar(video_name + ' - Progress of Basic Caculation', max=len(df.index)) as bar:  # with a progress bar
@@ -116,18 +57,20 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calc
             temp_df_fish0_dist.iloc[index] = caculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
             temp_df_fish1_dist.iloc[index] = caculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
 
-            #### Need to fix these problem, reduce dimension?
             # calculate the moving direction from frame n to frame n+1
-            # temp_df_fish0_direction.iloc[index] = calculate_moving_direction(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-            # temp_df_fish1_direction.iloc[index] = calculate_moving_direction(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
-            
+            temp_df_fish0_direction_x.iloc[index], temp_df_fish0_direction_y.iloc[index] = calculate_interframe_vector(getPoint(df['Fish0_x'], df['Fish0_y'], index), 
+                                                                                                                       getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+            temp_df_fish1_direction_x.iloc[index], temp_df_fish1_direction_y.iloc[index] = calculate_interframe_vector(getPoint(df['Fish1_x'], df['Fish1_y'], index), 
+                                                                                                                       getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
             bar.next()
 
     # Remeber to save the result from the temporary variable
     df['Fish0_interframe_movement_dist'] = temp_df_fish0_dist.copy()
     df['Fish1_interframe_movement_dist'] = temp_df_fish1_dist.copy()
-    # df['Fish0_interframe_moving_direction'] = temp_df_fish0_direction.copy()
-    # df["Fish1_interframe_moving_direction"] = temp_df_fish1_direction.copy()
+    df['Fish0_interframe_moving_direction_x'] = temp_df_fish0_direction_x.copy()
+    df['Fish0_interframe_moving_direction_y'] = temp_df_fish0_direction_y.copy()
+    df["Fish1_interframe_moving_direction_x"] = temp_df_fish1_direction_x.copy()
+    df["Fish1_interframe_moving_direction_y"] = temp_df_fish1_direction_y.copy()
 
     # Setting save file path. If folder is not exist, create a new one
     save_folder = folder_path + "preprocessed_data/"
@@ -176,8 +119,10 @@ def calculate_final_result(folder_path, video_name, filter_name):
     anno_df['Fish0_movement_length'] = 0
     anno_df['Fish1_movement_length'] = 0
     anno_df['movement_length_differnece'] = 0
-    # anno_df['Fish0_interframe_moving_direction_normalized'] = 0
-    # anno_df["Fish1_interframe_moving_direction_normalized"] = 0
+    anno_df['Fish0_moving_direction_x'] = 0
+    anno_df['Fish0_moving_direction_y'] = 0
+    anno_df["Fish1_moving_direction_x"] = 0
+    anno_df["Fish1_moving_direction_y"] = 0
 
     # use a temporary variable to prevent SettingWithCopyWarning problem
     temp_df_dtw = anno_df['DTW_distance'].copy()  
@@ -186,8 +131,10 @@ def calculate_final_result(folder_path, video_name, filter_name):
     temp_df_fish0_movement_length = anno_df['Fish0_movement_length'].copy()
     temp_df_fish1_movement_length = anno_df['Fish1_movement_length'].copy()
     temp_movementl_diff_df = anno_df['movement_length_differnece'].copy()
-    # temp_normalized_direction_fish0_df = anno_df['Fish0_interframe_moving_direction_normalized'].copy()
-    # temp_normalized_direction_fish1_df = anno_df["Fish1_interframe_moving_direction_normalized"].copy()
+    temp_df_direction_fish0_x = anno_df['Fish0_moving_direction_x'].copy()
+    temp_df_direction_fish0_y = anno_df['Fish0_moving_direction_y'].copy()
+    temp_df_direction_fish1_x = anno_df["Fish1_moving_direction_x"].copy()
+    temp_df_direction_fish1_y = anno_df["Fish1_moving_direction_y"].copy()
 
     # Calculate some features in the same trajectory interval between two trajectories
     with IncrementalBar(video_name + ' - Progress of Final Caculation', max=len(anno_df.index)) as bar:  # with a progress bar
@@ -210,9 +157,9 @@ def calculate_final_result(folder_path, video_name, filter_name):
             temp_movementl_diff_df.iloc[index] = movement_length_fish0 - movement_length_fish1
 
             # calculate a direction feature in a trajectory
-            # fish0_direction_normalized_matrix, fish1_direction_normalized_matrix = caculate_normalized_matrix_direction(start_frame, end_frame, traj_coordinate_df)
-            # temp_normalized_direction_fish0_df.iloc[index] = fish0_direction_normalized_matrix
-            # temp_normalized_direction_fish1_df.iloc[index] = fish1_direction_normalized_matrix
+            fish0_direction_x, fish0_direction_y, fish1_direction_x, fish1_direction_y = caculate_direction(start_frame, end_frame, traj_coordinate_df)
+            temp_df_direction_fish0_x.iloc[index], temp_df_direction_fish0_y.iloc[index] = fish0_direction_x, fish0_direction_y
+            temp_df_direction_fish1_x.iloc[index], temp_df_direction_fish1_y.iloc[index] = fish1_direction_x, fish1_direction_y
 
             bar.next()
 
@@ -223,8 +170,10 @@ def calculate_final_result(folder_path, video_name, filter_name):
     anno_df['Fish0_movement_length'] = temp_df_fish0_movement_length.copy()
     anno_df['Fish1_movement_length'] = temp_df_fish1_movement_length.copy()
     anno_df['movement_length_differnece'] = temp_movementl_diff_df.copy()
-    # anno_df['Fish0_interframe_moving_direction_normalized'] = temp_normalized_direction_fish0_df.copy()
-    # anno_df["Fish1_interframe_moving_direction_normalized"] = temp_normalized_direction_fish1_df.copy()
+    anno_df['Fish0_moving_direction_x'] = temp_df_direction_fish0_x.copy()
+    anno_df['Fish0_moving_direction_y'] = temp_df_direction_fish0_y.copy()
+    anno_df["Fish1_moving_direction_x"] = temp_df_direction_fish1_x.copy()
+    anno_df["Fish1_moving_direction_y"] = temp_df_direction_fish1_y.copy()
 
     # Save the result in a new csv file
     anno_df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result.csv", index = False)
