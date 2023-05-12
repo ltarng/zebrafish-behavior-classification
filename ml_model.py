@@ -13,20 +13,31 @@ from time import process_time
 
 
 def getFeaturesData(feature, df):
+    # Single Feature
     if feature == "dtw":
         X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
     elif feature == "velocity":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
-    elif feature == "dtw_and_velocity":
-        X = np.column_stack((df['DTW_distance'], df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
     elif feature == "movement_length":
         X = np.column_stack((df['Fish0_movement_length'], df['Fish1_movement_length']))
     elif feature == "movement_length_difference":
         X = np.vstack( df['movement_length_differnece'].to_numpy() )
-    elif feature == "movement_length_features":
-        X = np.column_stack((df['Fish0_movement_length'], df['Fish1_movement_length'],df['movement_length_differnece']))
+    elif feature == "direction":
+        X = np.column_stack((df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
+    # Combine Features
+    elif feature == "dtw_and_velocity":
+        X = np.column_stack((df['DTW_distance'], df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
+    elif feature == "dtw_velocity_movement_length":
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['Fish0_movement_length'], df['Fish1_movement_length'], df['DTW_distance']))
+    elif feature == "velocity_dtw_direction":
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
+    elif feature == "all":
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['Fish0_movement_length'], df['Fish1_movement_length'], df['DTW_distance']))
     else:
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['Fish0_movement_length'], df['Fish1_movement_length'], df['movement_length_differnece'], df['DTW_distance']))
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
+                             df['Fish0_movement_length'], df['Fish1_movement_length'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
     return X
 
 
