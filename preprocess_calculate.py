@@ -192,7 +192,7 @@ def calculate_final_result(folder_path, video_name, filter_name):
             temp_df_fish1_movement_length.iloc[index] = movement_length_fish1
 
             # calculate movement length difference between two trajectories
-            temp_movementl_diff_df.iloc[index] = movement_length_fish0 - movement_length_fish1
+            temp_movementl_diff_df.iloc[index] = round(movement_length_fish0 - movement_length_fish1, 2)
 
             # calculate a direction feature in a trajectory
             fish0_direction_x, fish0_direction_y = calculate_direction(start_frame, end_frame, basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'])
