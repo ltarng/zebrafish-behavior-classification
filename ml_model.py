@@ -6,6 +6,7 @@ import os
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -18,26 +19,43 @@ def getFeaturesData(feature, df):
         X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
     elif feature == "velocity":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
+    elif feature == "min_max_velocity":
+        X = np.column_stack((df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity']))
     elif feature == "movement_length":
         X = np.column_stack((df['Fish0_movement_length'], df['Fish1_movement_length']))
     elif feature == "movement_length_difference":
         X = np.vstack( df['movement_length_differnece'].to_numpy() )
     elif feature == "direction":
         X = np.column_stack((df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
+    elif feature == "same_direction_ratio":
+        X = np.vstack( df['same_direction_ratio'].to_numpy() )
+    elif feature == "avg_vector_angle":
+        X = np.vstack( df['avg_vector_angle'].to_numpy() )
     # Combine Features
-    elif feature == "dtw_and_velocity":
-        X = np.column_stack((df['DTW_distance'], df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
-    elif feature == "dtw_velocity_movement_length":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['Fish0_movement_length'], df['Fish1_movement_length'], df['DTW_distance']))
-    elif feature == "velocity_dtw_direction":
+    elif feature == "dtw_velocity_related_direction_sdr":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
-    elif feature == "all":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['Fish0_movement_length'], df['Fish1_movement_length'], df['DTW_distance']))
-    else:
+                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
+                             df['same_direction_ratio']))
+    elif feature == "dtw_velocity_related_direction_sdr_vecangle":
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
+                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
+                             df['same_direction_ratio'], df['avg_vector_angle']))
+    elif feature == "dtw_velocity_related_direction_sdr_length":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_movement_length'], df['Fish1_movement_length'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
+                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
+                             df['same_direction_ratio']))
+    elif feature == "dtw_velocity_related_direction_sdr_vecangle_length":
+        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
+                             df['Fish0_movement_length'], df['Fish1_movement_length'], 
+                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
+                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
+                             df['same_direction_ratio'], df['avg_vector_angle']))
+    else:
+        print("Error: feature name does not exist.")
     return X
 
 
@@ -71,7 +89,6 @@ def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) 
         train_X, train_y, test_X, test_y = X[train_ndx], y[train_ndx], X[test_ndx], y[test_ndx]
 
         actual_classes = np.append(actual_classes, test_y)
-
         model_.fit(train_X, train_y)
         predicted_classes = np.append(predicted_classes, model_.predict(test_X))
 
@@ -91,18 +108,20 @@ def create_saving_folder(folder_path):
     return save_folder
 
 
-def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder):
+def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder):
     cm = confusion_matrix(actual_classes, predicted_classes)
     sns.heatmap(cm, square=True, annot=True, cmap='Blues', xticklabels=sorted_labels, yticklabels=sorted_labels)
     # sns.despine(left=False, right=False, top=False, bottom=False)
 
     # Text part
-    plt.title('Confusion Matrix of ' + model_name + ' Classifier' +"\n" + 'Used Feature: ' + feature)
+    plt.title('Confusion Matrix of ' + model_name + ' Classifier' + "\n" + 
+              'Filter Name: ' + filter_name + "\n" +
+              'Used Feature: ' + feature)
     plt.xlabel("Predicted Value")
     plt.ylabel("True Value")
     plt.tight_layout()
 
-    plt.savefig(save_folder + model_name + "_" + feature + "_confusion_matrix.png")
+    plt.savefig(save_folder + model_name + "_" + filter_name + "_" + feature + "_confusion_matrix.png")
     plt.show()
 
 
@@ -122,6 +141,9 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
         model = SVC(kernel=kernel_name)
     elif model_name == "RandomForest":
         model = RandomForestClassifier(n_estimators=1000)
+    elif model_name == "XGBoost":
+        model = xgb.sklearn.XGBClassifier()
+        # model = xgb.sklearn.XGBClassifier(n_estimators=1000)
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
 
@@ -139,7 +161,7 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
     
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
+    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
 
 
 def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature):
@@ -157,6 +179,9 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
         model = SVC(kernel=kernel_name)
     elif model_name == "RandomForest":
         model = RandomForestClassifier(n_estimators=1000)
+    elif model_name == "XGBoost":
+        model = xgb.sklearn.XGBClassifier()
+        # model = xgb.sklearn.XGBClassifier(n_estimators=4000)
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
 
@@ -169,14 +194,14 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     # Show the testing result with confusion matrix
     print(model_name, feature)
     print(classification_report(actual_classes, predicted_classes))
-    print("Class number meaning - 1:bite, 2:chase, 3:circle, 4:display, 5:normal")
+    print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
 
     # Setting the path and create a folder to save confusion matrix pictures
     save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
 
 
@@ -214,8 +239,8 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, m
 
     # Combine bite and chase
     for index in range(0, len(df['BehaviorType'].index)):
-        if df['BehaviorType'].iloc[index] == 1 or df['BehaviorType'].iloc[index] == 2:
-            df['BehaviorType'].iloc[index] = 1
+        if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:
+            df['BehaviorType'].iloc[index] = 0
 
     # Select model and training
     if model_name == "SVM":
@@ -239,12 +264,12 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, m
     # Show the testing result with confusion matrix
     print(model_name, feature)
     print(classification_report(actual_classes, predicted_classes))
-    print("Class number meaning - 1:bite&chase, 4:display, 5:normal")
+    print("Class number meaning - 0:bite&chase, 1:display, 2:normal")
 
     # Setting the path and create a folder to save confusion matrix pictures
     save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite & chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
