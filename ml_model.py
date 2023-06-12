@@ -31,7 +31,7 @@ def getFeaturesData(feature, df):
         X = np.vstack( df['same_direction_ratio'].to_numpy() )
     elif feature == "avg_vector_angle":
         X = np.vstack( df['avg_vector_angle'].to_numpy() )
-    # Combine Features
+    # Combined Features
     elif feature == "dtw_velocity_related_direction_sdr":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
@@ -73,6 +73,23 @@ def choose_SVC_kernel_model():
         print("Your option is not in the list. Please choose again.")
         choose_SVC_kernel_model()
     return kernel_name
+
+
+def getModel(model_name):
+    # Select model and training
+    if model_name == "SVM":
+        kernel_name = choose_SVC_kernel_model()
+        model_name = model_name + '-' + kernel_name
+        model = SVC(kernel=kernel_name)
+    elif model_name == "RandomForest":
+        model = RandomForestClassifier(n_estimators=1000)
+        # model = RandomForestClassifier(n_estimators=2000)
+    elif model_name == "XGBoost":
+        # model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=100)  # default
+        model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=70)
+    else:
+        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+    return model
 
 
 def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) -> Tuple[np.array, np.array, np.array]:
@@ -135,18 +152,7 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
 
     # Select model and training
-    if model_name == "SVM":
-        kernel_name = choose_SVC_kernel_model()
-        model_name = model_name + '-' + kernel_name
-        model = SVC(kernel=kernel_name)
-    elif model_name == "RandomForest":
-        model = RandomForestClassifier(n_estimators=1000)
-    elif model_name == "XGBoost":
-        model = xgb.sklearn.XGBClassifier()
-        # model = xgb.sklearn.XGBClassifier(n_estimators=1000)
-    else:
-        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
-
+    model = getModel(model_name)
     model.fit(X_train, y_train)
 
     # Show the testing result with confusion matrix
@@ -172,18 +178,8 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     X = getFeaturesData(feature, df)
     y = df['BehaviorType']
 
-    # Select model and training
-    if model_name == "SVM":
-        kernel_name = choose_SVC_kernel_model()
-        model_name = model_name + '-' + kernel_name
-        model = SVC(kernel=kernel_name)
-    elif model_name == "RandomForest":
-        model = RandomForestClassifier(n_estimators=1000)
-    elif model_name == "XGBoost":
-        model = xgb.sklearn.XGBClassifier()
-        # model = xgb.sklearn.XGBClassifier(n_estimators=4000)
-    else:
-        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+    # Select model
+    model = getModel(model_name)
 
     # 10-fold  cross validation
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
@@ -214,14 +210,7 @@ def machine_learning_cross_validation_test(folder_path, video_name, filter_name,
     y = df['BehaviorType']
 
     # Select model and training
-    if model_name == "SVM":
-        kernel_name = choose_SVC_kernel_model()
-        model_name = model_name + '-' + kernel_name
-        model = SVC(kernel=kernel_name)
-    elif model_name == "RandomForest":
-        model = RandomForestClassifier(n_estimators=1000)
-    else:
-        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+    model = getModel(model_name)
 
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
 
@@ -237,20 +226,19 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, m
     X = getFeaturesData(feature, df)
     y = df['BehaviorType']
 
-    # Combine bite and chase
+    # Combine bite and chase, renumber all number of class type
     for index in range(0, len(df['BehaviorType'].index)):
-        if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:
+        if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:  # bite and chase
             df['BehaviorType'].iloc[index] = 0
+        elif df['BehaviorType'].iloc[index] == 2:  # display
+            df['BehaviorType'].iloc[index] = 1
+        elif df['BehaviorType'].iloc[index] == 3:  # normal
+            df['BehaviorType'].iloc[index] = 2
+        else:
+            print("Index of BehaviorType is not 0, 1, 2 or 3.")
 
-    # Select model and training
-    if model_name == "SVM":
-        kernel_name = choose_SVC_kernel_model()
-        model_name = model_name + '-' + kernel_name
-        model = SVC(kernel=kernel_name)
-    elif model_name == "RandomForest":
-        model = RandomForestClassifier(n_estimators=1000)
-    else:
-        print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
+    # Select model
+    model = getModel(model_name)
 
     # 10-fold  cross validation
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
