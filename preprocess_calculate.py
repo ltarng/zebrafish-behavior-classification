@@ -4,14 +4,14 @@ from dtaidistance import dtw_ndim
 import math
 from progress.bar import IncrementalBar
 import os
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 def getPoint(df_fish_x, df_fish_y, index):
     return [df_fish_x.iloc[index], df_fish_y.iloc[index]]
 
 
-def caculate_interframe_distance(p0, p1):
+def calculate_interframe_distance(p0, p1):
     return round(math.dist(p0, p1), 2)
 
 
@@ -47,8 +47,8 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calc
     with IncrementalBar(video_name + ' - Progress of Basic Caculation', max=len(df.index)) as bar:  # with a progress bar
         for index in range(0, len(df.index)-1):
             # calculate the distance between: frame n to frame n+1 
-            temp_df_fish0_dist.iloc[index] = caculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-            temp_df_fish1_dist.iloc[index] = caculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+            temp_df_fish0_dist.iloc[index] = calculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
+            temp_df_fish1_dist.iloc[index] = calculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
 
             # calculate the moving direction from frame n to frame n+1
             temp_df_fish0_direction_x.iloc[index], temp_df_fish0_direction_y.iloc[index] = calculate_interframe_vector(getPoint(df['Fish0_x'], df['Fish0_y'], index), 
@@ -82,7 +82,7 @@ def calculate_dtw(start_frame, end_frame, traj_df_f0_x, traj_df_f0_y, traj_df_f1
     return round(dtw_distance, 2)
 
 
-def caculate_avg_velocity(start_frame, end_frame, traj_df):
+def calculate_avg_velocity(start_frame, end_frame, traj_df):
     avg_dist = round(traj_df[start_frame:end_frame-1].mean(), 2)
     return round(avg_dist, 2)
 
@@ -104,7 +104,7 @@ def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # Under 
     return fish_mean_shift_x, fish_mean_shift_y
 
 
-def caculate_angle_between_vectors(a, b):
+def calculate_angle_between_vectors(a, b):
     # Transform list to numpy array
     v1, v2 = np.array(a), np.array(b)
 
@@ -118,7 +118,7 @@ def caculate_angle_between_vectors(a, b):
     if module_v1v2 == 0:
         cosine_theta = 0
     else:
-        cosine_theta = dot_value / module_v1v2  # sometimes invalid calculate happen, better to fix
+        cosine_theta = dot_value / module_v1v2
     
     # cosine_theta may out of range by calculating problem. It always should be in [-1.0, 1.0].
     if cosine_theta > 1:
@@ -146,7 +146,7 @@ def getVectorAnglesFeature(df_vector_angles):
 def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):
     vector_angles = []
     for index in range(start_frame, end_frame):
-        vector_angle = caculate_angle_between_vectors([df_fish0_x_shift.iloc[index], df_fish0_y_shift.iloc[index]], 
+        vector_angle = calculate_angle_between_vectors([df_fish0_x_shift.iloc[index], df_fish0_y_shift.iloc[index]], 
                                                       [df_fish1_x_shift.iloc[index], df_fish1_y_shift.iloc[index]])
         vector_angles.append(vector_angle)
     df = pd.DataFrame(vector_angles, columns=['direction_vector_angle'])
@@ -230,8 +230,8 @@ def calculate_final_result(folder_path, video_name, filter_name):
             temp_df_dtw.iloc[index] = calculate_dtw(start_frame, end_frame, basic_data_df['Fish0_x'], basic_data_df['Fish0_y'], basic_data_df['Fish1_x'], basic_data_df['Fish1_y'])
 
             # calculate average velocity in each trajectory
-            temp_df_fish0_avgv.iloc[index] = caculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
-            temp_df_fish1_avgv.iloc[index] = caculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
+            temp_df_fish0_avgv.iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
+            temp_df_fish1_avgv.iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
 
             # get the minimun and miximum velocity in each trajectory
             temp_df_fish0_minv.iloc[index], temp_df_fish0_maxv.iloc[index] = get_min_max(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
@@ -300,4 +300,17 @@ def standarlize_preprocessed_data(folder_path, video_name, filter_name):
     
     df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_std.csv", index = False)
     print("Complete Standarlization. The file had been saved in: " + folder_path)
+    print("\n")
+
+
+def normalize_preprocessed_data(folder_path, video_name, filter_name):
+    resource_folder = folder_path + "preprocessed_data/"
+    df = pd.read_csv(resource_folder + video_name + '_' + filter_name + '_preprocessed_result.csv')
+
+    scaler = MinMaxScaler()
+    start_col, end_col0 = 4, 22
+    df.iloc[:,start_col:end_col0] = scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy())
+    
+    df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_nor.csv", index = False)
+    print("Complete Normalization. The file had been saved in: " + folder_path)
     print("\n")
