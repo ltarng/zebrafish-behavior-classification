@@ -4,14 +4,15 @@ from dtaidistance import dtw_ndim
 import math
 from progress.bar import IncrementalBar
 import os
+from sklearn.preprocessing import StandardScaler
 
 
 def getPoint(df_fish_x, df_fish_y, index):
     return [df_fish_x.iloc[index], df_fish_y.iloc[index]]
 
 
-def caculate_interframe_distance(p1, p2):
-    return round(math.dist(p1, p2), 2)
+def caculate_interframe_distance(p0, p1):
+    return round(math.dist(p0, p1), 2)
 
 
 def calculate_interframe_vector(p0, p1):
@@ -87,9 +88,9 @@ def caculate_avg_velocity(start_frame, end_frame, traj_df):
 
 
 def get_min_max(start_frame, end_frame, traj_df):
-    min_dist = min(traj_df[start_frame:end_frame-1])
-    max_dist = max(traj_df[start_frame:end_frame-1])
-    return min_dist, max_dist
+    min_value = min(traj_df[start_frame:end_frame-1])
+    max_value = max(traj_df[start_frame:end_frame-1])
+    return min_value, max_value
 
 
 def calculate_movement_length(start_frame, end_frame, traj_df):
@@ -105,31 +106,54 @@ def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # Under 
 
 def caculate_angle_between_vectors(a, b):
     # Transform list to numpy array
-    v1 = np.array(a)
-    v2 = np.array(b)
+    v1, v2 = np.array(a), np.array(b)
 
     # Calculate module
-    module_v1 = np.sqrt(v1.dot(v1))
-    module_v2 = np.sqrt(v2.dot(v2))
+    module_v1 = math.sqrt(v1.dot(v1))
+    module_v2 = math.sqrt(v2.dot(v2))
 
     # Calculate dot product and cosine value 
     dot_value = v1.dot(v2)
-    cosine_theta = dot_value / (module_v1*module_v2)
+    cosine_theta = dot_value / (module_v1*module_v2)  # sometimes invalid calculate happen, better to fix
+    
+    # cosine_theta may out of range by calculating problem. It always should be in [-1.0, 1.0].
+    if cosine_theta > 1:
+        cosine_theta = 1
+    elif cosine_theta < -1:
+        cosine_theta = -1
+    else:
+        cosine_theta = round(cosine_theta, 4)
 
-    # Calculate radian value and conversion to angle value
-    radian = np.arccos(cosine_theta)
-    angle = radian*180/np.pi
+    # Calculate radian value
+    radian = math.acos(cosine_theta)
+
+    # Convert radian into angle. Dual situation if radian equal to zero
+    if radian > 0:
+        angle = radian*180/math.pi
+    else:
+        angle = 0
 
     return round(angle, 2)
 
 
-def calculate_same_direction_ratio(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):
-    duration_time = end_frame - start_frame + 1
-    same_direction_frames = 0
-    vector_angle_sum = 0
-    for index in range(start_frame, end_frame):  # If x-axis is same direction and y-axis is same direction, counter+=1
+def getVectorAnglesFeature(df_vector_angles):
+    return min(df_vector_angles), max(df_vector_angles), df_vector_angles.mean()
+
+def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):
+    vector_angles = []
+    for index in range(start_frame, end_frame):
         vector_angle = caculate_angle_between_vectors([df_fish0_x_shift.iloc[index], df_fish0_y_shift.iloc[index]], 
                                                       [df_fish1_x_shift.iloc[index], df_fish1_y_shift.iloc[index]])
+        vector_angles.append(vector_angle)
+    df = pd.DataFrame(vector_angles, columns=['direction_vector_angle'])
+    return df
+
+
+def calculate_same_direction_ratio(df_vector_angles):
+    duration_time = len(df_vector_angles.index)
+    same_direction_frames = 0
+    for index in range(duration_time):  # If x-axis is same direction and y-axis is same direction, counter+=1
+        vector_angle = df_vector_angles.iloc[index]
         if vector_angle < 90 and vector_angle > 0:
             # Angle degree is 0~90
             same_direction_frames += 1
@@ -137,11 +161,8 @@ def calculate_same_direction_ratio(start_frame, end_frame, df_fish0_x_shift, df_
             # Angle value is >=90 or equal to zero
             continue
 
-        vector_angle_sum = vector_angle_sum + vector_angle
-
     same_direction_ratio = same_direction_frames/duration_time
-    avg_vector_angle = vector_angle_sum/duration_time
-    return round(same_direction_ratio, 2), round(avg_vector_angle, 2)
+    return round(same_direction_ratio, 2)
 
 
 def calculate_final_result(folder_path, video_name, filter_name):
@@ -171,6 +192,8 @@ def calculate_final_result(folder_path, video_name, filter_name):
     anno_df["Fish1_moving_direction_x"] = 0
     anno_df["Fish1_moving_direction_y"] = 0
     anno_df['same_direction_ratio'] = 0
+    anno_df['max_vector_angle'] = 0
+    anno_df['min_vector_angle'] = 0
     anno_df['avg_vector_angle'] = 0
 
     # use a temporary variable to prevent SettingWithCopyWarning problem
@@ -189,6 +212,8 @@ def calculate_final_result(folder_path, video_name, filter_name):
     temp_df_direction_fish1_x = anno_df["Fish1_moving_direction_x"].copy()
     temp_df_direction_fish1_y = anno_df["Fish1_moving_direction_y"].copy()
     temp_df_same_direction_ratio = anno_df['same_direction_ratio'].copy()
+    temp_df_min_vector_angle = anno_df['min_vector_angle'].copy()
+    temp_df_max_vector_angle = anno_df['max_vector_angle'].copy()
     temp_df_avg_vector_angle = anno_df['avg_vector_angle'].copy()
 
     # Calculate some features in the same trajectory interval between two trajectories
@@ -223,12 +248,15 @@ def calculate_final_result(folder_path, video_name, filter_name):
             temp_df_direction_fish0_x.iloc[index], temp_df_direction_fish0_y.iloc[index] = fish0_direction_x, fish0_direction_y
             temp_df_direction_fish1_x.iloc[index], temp_df_direction_fish1_y.iloc[index] = fish1_direction_x, fish1_direction_y
 
-            # Calculate the ratio when fish swim in same direction in a trajectory 
-            same_direction_ratio, avg_vector_angle = calculate_same_direction_ratio(start_frame, end_frame, 
-                                                                  basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'],
-                                                                  basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y'])
-            temp_df_same_direction_ratio.iloc[index] = same_direction_ratio
-            temp_df_avg_vector_angle.iloc[index] = avg_vector_angle
+            # Calculate the ratio when fish swim in same direction in a trajectory
+            df_vector_angles = calculate_vector_angles(start_frame, end_frame, 
+                                                        basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'],
+                                                        basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y'])
+            # min_vector_angle, max_vector_angle = min(df_vector_angles['direction_vector_angle']), max(df_vector_angles['direction_vector_angle'])
+            min_vector_angle, max_vector_angle, avg_vector_angle = getVectorAnglesFeature(df_vector_angles['direction_vector_angle'])
+            same_direction_ratio = calculate_same_direction_ratio(df_vector_angles['direction_vector_angle'])
+            temp_df_avg_vector_angle.iloc[index], temp_df_same_direction_ratio.iloc[index] = avg_vector_angle, same_direction_ratio
+            temp_df_min_vector_angle.iloc[index], temp_df_max_vector_angle.iloc[index] = min_vector_angle, max_vector_angle
 
             bar.next()
 
@@ -248,10 +276,25 @@ def calculate_final_result(folder_path, video_name, filter_name):
     anno_df["Fish1_moving_direction_x"] = temp_df_direction_fish1_x.copy()
     anno_df["Fish1_moving_direction_y"] = temp_df_direction_fish1_y.copy()
     anno_df['same_direction_ratio'] = temp_df_same_direction_ratio.copy()
+    anno_df['min_vector_angle'] = temp_df_min_vector_angle.copy()
+    anno_df['max_vector_angle'] = temp_df_max_vector_angle.copy()
     anno_df['avg_vector_angle'] = temp_df_avg_vector_angle.copy()
 
     # Save the result in a new csv file
     anno_df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result.csv", index = False)
-    print("Complete DTW, movement length, movement length difference and average velocity calculation.")
+    print("Complete final calculate.")
     print("The file had been saved in: " + folder_path)
+    print("\n")
+
+
+def standarlize_preprocessed_data(folder_path, video_name, filter_name):
+    resource_folder = folder_path + "preprocessed_data/"
+    df = pd.read_csv(resource_folder + video_name + '_' + filter_name + '_preprocessed_result.csv')
+
+    scaler = StandardScaler()
+    start_col, end_col0 = 4, 22
+    df.iloc[:,start_col:end_col0] = scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy())
+    
+    df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_std.csv", index = False)
+    print("Complete Standarlization.The file had been saved in: " + folder_path)
     print("\n")

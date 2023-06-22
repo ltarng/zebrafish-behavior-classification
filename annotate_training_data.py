@@ -3,7 +3,7 @@ import os
 
 
 def getBehaviorDict():
-    behavior_dict = {'bite': 1, 'chase': 2, 'circle': 3, 'display': 4, 'normal': 5}
+    behavior_dict = {'bite': 0, 'chase': 1, 'display': 2, 'normal': 3, 'circle': 4}
     return behavior_dict
 
 

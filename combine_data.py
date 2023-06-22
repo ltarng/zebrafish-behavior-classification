@@ -1,13 +1,13 @@
 import pandas as pd
 
 
-def combine_preprocessed_files(folder_path, video_names, filter_name):
+def combine_preprocessed_files(folder_path, video_names, filter_name, filename_tail):
     resource_folder = folder_path + "preprocessed_data/"
     combined_df = pd.DataFrame()
 
     # Combine files and save the result in "combined_df"
     for index in range(0, len(video_names)):
-        df = pd.read_csv(resource_folder + video_names[index] + "_" + filter_name + "_preprocessed_result.csv")
+        df = pd.read_csv(resource_folder + video_names[index] + "_" + filter_name + filename_tail)
 
         # Create and add the new comlumn 'VideoName' to resource dataframe, save the result in temp_df
         temp_df = df.copy()
@@ -23,5 +23,10 @@ def combine_preprocessed_files(folder_path, video_names, filter_name):
     print(combined_df)
 
     # Save the combined data in main folder
-    combined_df.to_csv(folder_path + "Combined" + "_" + filter_name + "_preprocessed_result.csv", index = False)
+    combined_df.to_csv(folder_path + "Combined" + "_" + filter_name + filename_tail, index = False)
     print("Successfully combined two csv files.")
+
+
+def combine_preprocessed_main(folder_path, video_names, filter_name):
+    combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result.csv")
+    combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_std.csv")

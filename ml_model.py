@@ -5,6 +5,7 @@ from typing import Tuple
 import os
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 from sklearn.metrics import classification_report, confusion_matrix
@@ -31,6 +32,8 @@ def getFeaturesData(feature, df):
         X = np.vstack( df['same_direction_ratio'].to_numpy() )
     elif feature == "avg_vector_angle":
         X = np.vstack( df['avg_vector_angle'].to_numpy() )
+    elif feature == "min_max_vector_angle":
+        X = np.column_stack((df['min_vector_angle'], df['max_vector_angle']))
     # Combined Features
     elif feature == "dtw_velocity_related_direction_sdr":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
@@ -75,27 +78,35 @@ def choose_SVC_kernel_model():
     return kernel_name
 
 
-def getModel(model_name):
+def getModel(chosen_model):
     # Select model and training
-    if model_name == "SVM":
+    if chosen_model == "SVM":
         kernel_name = choose_SVC_kernel_model()
-        model_name = model_name + '-' + kernel_name
+        model_name = chosen_model + '-' + kernel_name
         model = SVC(kernel=kernel_name)
-    elif model_name == "RandomForest":
+    elif chosen_model == "DecisionTree":
+        model_name = "Decision Tree"
+        model = DecisionTreeClassifier()
+    elif chosen_model == "RandomForest":
+        model_name = "Random Forest"
         model = RandomForestClassifier(n_estimators=1000)
         # model = RandomForestClassifier(n_estimators=2000)
-    elif model_name == "XGBoost":
+    elif chosen_model == "XGBoost":
+        model_name = "XGBoost"
         # model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=100)  # default
-        model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=70)
+        # model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=70)
+        model = xgb.sklearn.XGBClassifier()
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
-    return model
+    return model, model_name
 
 
 def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) -> Tuple[np.array, np.array, np.array]:
     # Reference: https://towardsdatascience.com/how-to-plot-a-confusion-matrix-from-a-k-fold-cross-validation-b607317e9874
     model_ = cp.deepcopy(model)
     no_classes = len(np.unique(y))
+
+    pre = model_
     
     actual_classes = np.empty([0], dtype=int)
     predicted_classes = np.empty([0], dtype=int)
@@ -113,6 +124,22 @@ def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) 
             predicted_proba = np.append(predicted_proba, model_.predict_proba(test_X), axis=0)
         except:
             predicted_proba = np.append(predicted_proba, np.zeros((len(test_X), no_classes), dtype=float), axis=0)
+
+    print(model_)
+    # # xgb.plot_importance(model_)
+    # importances = model_.feature_importances_
+    # print('每個特徵重要程度: ', importances)
+    # feature_names = [f"feature {i}" for i in range(X.shape[1])]
+    # std = np.std([tree.feature_importances_ for tree in model_.estimators_], axis=0)
+
+    # forest_importances = pd.Series(importances, index=feature_names)
+
+    # fig, ax = plt.subplots()
+    # forest_importances.plot.bar(yerr=std, ax=ax)
+    # ax.set_title("Feature importances using MDI")
+    # ax.set_ylabel("Mean decrease in impurity")
+    # fig.tight_layout()
+    # plt.show()
 
     return actual_classes, predicted_classes, predicted_proba
 
@@ -142,7 +169,7 @@ def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, mode
     plt.show()
 
 
-def machine_learning_main(folder_path, video_name, filter_name, model_name, feature):
+def machine_learning_main(folder_path, video_name, filter_name, chosen_model, feature):
     # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
@@ -152,7 +179,7 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
 
     # Select model and training
-    model = getModel(model_name)
+    model, model_name = getModel(chosen_model)
     model.fit(X_train, y_train)
 
     # Show the testing result with confusion matrix
@@ -170,7 +197,7 @@ def machine_learning_main(folder_path, video_name, filter_name, model_name, feat
     plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
 
 
-def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature):
+def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_model, feature):
     # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
@@ -179,7 +206,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     y = df['BehaviorType']
 
     # Select model
-    model = getModel(model_name)
+    model, model_name = getModel(chosen_model)
 
     # 10-fold  cross validation
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
@@ -192,16 +219,39 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, model_nam
     print(classification_report(actual_classes, predicted_classes))
     print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
 
-    # Setting the path and create a folder to save confusion matrix pictures
-    save_folder = create_saving_folder(folder_path)
+    # # Setting the path and create a folder to save confusion matrix pictures
+    # save_folder = create_saving_folder(folder_path)
 
-    # Plot the confusion matrix graph on screen, and save it in png format
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
-    print("Execution time: ", end_time - start_time)
+    # # Plot the confusion matrix graph on screen, and save it in png format
+    # sorted_labels = ['bite', 'chase', 'display', 'normal']
+    # plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
+    # print("Execution time: ", end_time - start_time)
 
 
-def machine_learning_cross_validation_test(folder_path, video_name, filter_name, model_name, feature):
+def machine_learning_main_cv_std(folder_path, video_name, filter_name, chosen_model, feature):
+    # Read preprocessed trajectory data
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_std.csv')
+
+    # Split data into trainging data and testing data
+    X = getFeaturesData(feature, df)
+    y = df['BehaviorType']
+
+    # Select model
+    model, model_name = getModel(chosen_model)
+
+    # 10-fold  cross validation
+    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    start_time = process_time()
+    actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
+    end_time = process_time()
+
+    # Show the testing result with confusion matrix
+    print(model_name, feature)
+    print(classification_report(actual_classes, predicted_classes))
+    print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
+
+
+def machine_learning_cross_validation_test(folder_path, video_name, filter_name, chosen_model, feature):
     # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
@@ -210,7 +260,7 @@ def machine_learning_cross_validation_test(folder_path, video_name, filter_name,
     y = df['BehaviorType']
 
     # Select model and training
-    model = getModel(model_name)
+    model = getModel(chosen_model)
 
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
 
@@ -218,7 +268,7 @@ def machine_learning_cross_validation_test(folder_path, video_name, filter_name,
     print("Mean accuracy: ", cv_results.mean(), ", standard deviation", cv_results.std())
 
 
-def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, model_name, feature):
+def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, chosen_model, feature):
     # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_half_bite_chase.csv')
 
@@ -238,10 +288,10 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, m
             print("Index of BehaviorType is not 0, 1, 2 or 3.")
 
     # Select model
-    model = getModel(model_name)
+    model, model_name = getModel(chosen_model)
 
     # 10-fold  cross validation
-    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
     start_time = process_time()
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
     end_time = process_time()
@@ -259,5 +309,5 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, m
 
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite & chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_5cv_", filter_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
