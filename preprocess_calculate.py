@@ -114,7 +114,11 @@ def caculate_angle_between_vectors(a, b):
 
     # Calculate dot product and cosine value 
     dot_value = v1.dot(v2)
-    cosine_theta = dot_value / (module_v1*module_v2)  # sometimes invalid calculate happen, better to fix
+    module_v1v2 = module_v1*module_v2
+    if module_v1v2 == 0:
+        cosine_theta = 0
+    else:
+        cosine_theta = dot_value / module_v1v2  # sometimes invalid calculate happen, better to fix
     
     # cosine_theta may out of range by calculating problem. It always should be in [-1.0, 1.0].
     if cosine_theta > 1:
@@ -282,8 +286,7 @@ def calculate_final_result(folder_path, video_name, filter_name):
 
     # Save the result in a new csv file
     anno_df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result.csv", index = False)
-    print("Complete final calculate.")
-    print("The file had been saved in: " + folder_path)
+    print("Complete calculation. The file had been saved in: " + folder_path)
     print("\n")
 
 
@@ -296,5 +299,5 @@ def standarlize_preprocessed_data(folder_path, video_name, filter_name):
     df.iloc[:,start_col:end_col0] = scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy())
     
     df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_std.csv", index = False)
-    print("Complete Standarlization.The file had been saved in: " + folder_path)
+    print("Complete Standarlization. The file had been saved in: " + folder_path)
     print("\n")
