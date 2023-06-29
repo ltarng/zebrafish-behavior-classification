@@ -12,7 +12,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 from time import process_time
-
+from sklearn.model_selection import GridSearchCV
 
 def getFeaturesData(feature, df):
     # Single Feature
@@ -40,62 +40,44 @@ def getFeaturesData(feature, df):
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
                              df['same_direction_ratio']))
-    elif feature == "dtw_velocity_related_direction_sdr_vecangle":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
-                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio'], df['avg_vector_angle']))
-    elif feature == "dtw_velocity_related_direction_sdr_length":
+    elif feature == "dtw_velocities_direction_sdr_angles_length":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_movement_length'], df['Fish1_movement_length'], 
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio']))
-    elif feature == "dtw_velocity_related_direction_sdr_vecangle_length":
+                             df['same_direction_ratio'], df['avg_vector_angle'], df['min_vector_angle'], df['max_vector_angle']))
+    elif feature == "dtw_velocities_direction_sdr_partangles_length":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_movement_length'], df['Fish1_movement_length'], 
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio'], df['avg_vector_angle']))
+                             df['same_direction_ratio'], df['min_vector_angle'], df['max_vector_angle']))
+    elif feature == "vecangle_related":
+        X = np.column_stack(( df['same_direction_ratio'],df['avg_vector_angle'],df['min_vector_angle'], df['max_vector_angle']))
     else:
         print("Error: feature name does not exist.")
     return X
 
 
-def choose_SVC_kernel_model():
-    kernel_num = input("Choose kernel function - 1:linear, 2:poly, 3:rbf, 4:sigmoid \n")
-    if kernel_num == '1':
-        kernel_name = 'linear'
-    elif kernel_num == '2':
-        kernel_name = 'poly'
-    elif kernel_num == '3':
-        kernel_name = 'rbf'
-    elif kernel_num == '4':
-        kernel_name = 'sigmoid'
-    else:
-        print("Your option is not in the list. Please choose again.")
-        choose_SVC_kernel_model()
-    return kernel_name
-
-
 def getModel(chosen_model):
     # Select model and training
     if chosen_model == "SVM":
-        kernel_name = choose_SVC_kernel_model()
+        kernel_name = "linear"
         model_name = chosen_model + '-' + kernel_name
-        model = SVC(kernel=kernel_name)
+        # model = SVC(kernel="rbf")  # default
+        model = SVC(C=0.1, kernel=kernel_name)
     elif chosen_model == "DecisionTree":
         model_name = "Decision Tree"
         model = DecisionTreeClassifier()
     elif chosen_model == "RandomForest":
         model_name = "Random Forest"
-        model = RandomForestClassifier(n_estimators=1000)
-        # model = RandomForestClassifier(n_estimators=2000)
+        # model = RandomForestClassifier(n_estimators=10, criterion="gini", max_features="auto", max_depth="None", random_state=None)  # default
+        model = RandomForestClassifier(max_depth=13, n_estimators=950, criterion="gini", max_features=None)  # best for 4 categories?
+        # model = RandomForestClassifier(max_depth=None, n_estimators=1000, criterion="gini", max_features=None)  # best for 3 categories
     elif chosen_model == "XGBoost":
         model_name = "XGBoost"
-        # model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=100)  # default
-        # model = xgb.sklearn.XGBClassifier(max_depth=6, n_estimators=70)
-        model = xgb.sklearn.XGBClassifier()
+        # model = xgb.sklearn.XGBClassifier(max_depth=6, learning_rate=0.3, n_estimators=100, colsample_bytree=1)  # default
+        model = xgb.sklearn.XGBClassifier(max_depth=3, n_estimators=750, colsample_bytree=0.3, learning_rate=0.1)  # best for 4 categories
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
     return model, model_name
@@ -125,7 +107,6 @@ def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) 
         except:
             predicted_proba = np.append(predicted_proba, np.zeros((len(test_X), no_classes), dtype=float), axis=0)
 
-    print(model_)
     # # xgb.plot_importance(model_)
     # importances = model_.feature_importances_
     # print('每個特徵重要程度: ', importances)
@@ -208,7 +189,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     # Select model
     model, model_name = getModel(chosen_model)
 
-    # 10-fold  cross validation
+    # k-fold  cross validation
     skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
     start_time = process_time()
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
@@ -219,53 +200,13 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     print(classification_report(actual_classes, predicted_classes))
     print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
 
-    # # Setting the path and create a folder to save confusion matrix pictures
-    # save_folder = create_saving_folder(folder_path)
+    # Setting the path and create a folder to save confusion matrix pictures
+    save_folder = create_saving_folder(folder_path)
 
-    # # Plot the confusion matrix graph on screen, and save it in png format
-    # sorted_labels = ['bite', 'chase', 'display', 'normal']
-    # plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder)
-    # print("Execution time: ", end_time - start_time)
-
-
-def machine_learning_main_cv_std(folder_path, video_name, filter_name, chosen_model, feature):
-    # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_std.csv')
-
-    # Split data into trainging data and testing data
-    X = getFeaturesData(feature, df)
-    y = df['BehaviorType']
-
-    # Select model
-    model, model_name = getModel(chosen_model)
-
-    # 10-fold  cross validation
-    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
-    start_time = process_time()
-    actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
-    end_time = process_time()
-
-    # Show the testing result with confusion matrix
-    print(model_name, feature)
-    print(classification_report(actual_classes, predicted_classes))
-    print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
-
-
-def machine_learning_cross_validation_test(folder_path, video_name, filter_name, chosen_model, feature):
-    # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-
-    # Split data into trainging data and testing data
-    X = getFeaturesData(feature, df)
-    y = df['BehaviorType']
-
-    # Select model and training
-    model = getModel(chosen_model)
-
-    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
-
-    cv_results = cross_val_score(model, X, y, cv=skfold, scoring='accuracy', verbose=10)
-    print("Mean accuracy: ", cv_results.mean(), ", standard deviation", cv_results.std())
+    # Plot the confusion matrix graph on screen, and save it in png format
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_10cv_", filter_name, feature, save_folder)
+    print("Execution time: ", end_time - start_time)
 
 
 def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, chosen_model, feature):
@@ -291,7 +232,7 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, c
     model, model_name = getModel(chosen_model)
 
     # 10-fold  cross validation
-    skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
     start_time = process_time()
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
     end_time = process_time()
@@ -309,5 +250,62 @@ def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, c
 
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite & chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_5cv_", filter_name, feature, save_folder)
+    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_10cv_", filter_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
+
+
+def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature):
+    # Read preprocessed trajectory data
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+
+    # Split data into trainging data and testing data
+    X = getFeaturesData(feature, df)
+    y = df['BehaviorType']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
+
+    # Define value of parameters for Grid Search
+    if model_name == "SVM":
+        params = [{'kernel': ['linear'],'C': [0.06,0.08,0.1,0.12,0.14]}]
+        model = SVC(random_state=1)
+    elif model_name == "RandomForest":
+        params = { 
+        'n_estimators': [925, 950, 975],
+        'max_features': [None],
+        'max_depth' : [13,14,15,None],
+        'criterion' :['gini']
+        }
+        model = RandomForestClassifier(random_state=1)
+    elif model_name == "XGBoost":
+        params = { 'max_depth': [3,6,9,None],
+            'learning_rate': [0.05,0.1, 0.3, 0.5],
+            'n_estimators': [500, 750, 1000],
+            'colsample_bytree': [0.1, 0.3, 0.5],
+            'n_jobs': [-1]}
+        model = xgb.sklearn.XGBClassifier(random_state=1)
+    else:
+        print("Invalid model name.")
+
+    # Do Grid Search, seeking the best combination of parameters
+    clf = GridSearchCV(estimator=model, 
+                    param_grid=params,
+                    scoring='neg_mean_squared_error', 
+                    verbose=1)
+    clf.fit(X_train, y_train)
+    print("Best parameters:", clf.best_params_)
+
+
+def machine_learning_cross_validation_test(folder_path, video_name, filter_name, chosen_model, feature):
+    # Read preprocessed trajectory data
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+
+    # Split data into trainging data and testing data
+    X = getFeaturesData(feature, df)
+    y = df['BehaviorType']
+
+    # Select model and training
+    model = getModel(chosen_model)
+
+    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
+
+    cv_results = cross_val_score(model, X, y, cv=skfold, scoring='accuracy', verbose=10)
+    print("Mean accuracy: ", cv_results.mean(), ", standard deviation", cv_results.std())
