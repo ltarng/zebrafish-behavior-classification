@@ -29,5 +29,5 @@ def combine_preprocessed_files(folder_path, video_names, filter_name, filename_t
 
 def combine_preprocessed_main(folder_path, video_names, filter_name):
     combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result.csv")
-    combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_std.csv")
+    # combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_std.csv")
     combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_nor.csv")
