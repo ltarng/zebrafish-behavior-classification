@@ -53,8 +53,14 @@ def cnn_model_2(X_train, y_train):
     model = Sequential()
     model.add(Input(shape=(num_timesteps, num_features)))
     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(Dropout(0.5))
     model.add(AveragePooling1D(pool_size=2, padding="same"))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(Dropout(0.5))
     model.add(Flatten())
+    model.add(Dense(50, activation='softmax'))
     model.add(Dense(num_outputs, activation='softmax'))
     return model
 
@@ -66,12 +72,17 @@ def cnn_model_3(X_train, y_train):  # not the best?
     model.add(Input(shape=(num_timesteps, num_features)))
     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
     model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Dropout(0.5))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
     model.add(Flatten())
     model.add(Dense(num_outputs, activation='softmax'))
     return model
 
 
-def cnn_model_4(X_train, y_train):  # validation test not good
+def cnn_model_4(X_train, y_train):  # good than one, but need to improve
     num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
 
     model = Sequential()
@@ -87,9 +98,33 @@ def cnn_model_4(X_train, y_train):  # validation test not good
     return model
 
 
-def deep_learning_main(folder_path, video_name, filter_name, model_name, feature):
+def getDF(folder_path, video_name, filter_name, class_num):
+    if class_num == 4:
+        df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+    elif class_num == 3:
+        # Read preprocessed trajectory data
+        df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_half_bite_chase.csv')
+
+        # Combine bite and chase, renumber all number of class type
+        temp_df_type = df['BehaviorType'].copy()
+        for index in range(0, len(df['BehaviorType'].index)):
+            if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:  # bite and chase
+                temp_df_type.iloc[index] = 0
+            elif df['BehaviorType'].iloc[index] == 2:  # display
+                temp_df_type.iloc[index] = 1
+            elif df['BehaviorType'].iloc[index] == 3:  # normal
+                temp_df_type.iloc[index] = 2
+            else:
+                print("Index of BehaviorType is not 0, 1, 2 or 3.")
+        df['BehaviorType'] = temp_df_type.copy()
+    else:
+        print("Wrong class_num setting.")
+    return df
+
+
+def deep_learning_main(folder_path, video_name, filter_name, model_name, feature, class_num):
     # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+    df = getDF(folder_path, video_name, filter_name, class_num)
 
     # Split data into trainging data and testing data
     X = ml_model.getFeaturesData(feature, df)
@@ -116,7 +151,7 @@ def deep_learning_main(folder_path, video_name, filter_name, model_name, feature
     elif model_select == "cnn_2":
         model = cnn_model_2(X_train, y_train)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
+        model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=200, verbose=2, callbacks=[tensorboard_callback])
     elif model_select == 'cnn_3':
         model = cnn_model_3(X_train, y_train)
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -132,72 +167,20 @@ def deep_learning_main(folder_path, video_name, filter_name, model_name, feature
     predictions = np.argmax(model.predict(X_test), axis=1)
     y_test = np.argmax(y_test, axis=1)
 
-    # Setting the path for saving confusion matrix pictures
-    save_folder = ml_model.create_saving_folder(folder_path)
-    
-    # Plot confusion matrix for the result
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
-    # print("y_test is: ",y_test, "\npred.  is: ", predictions)
-    print(ml_model.classification_report(y_test, predictions))
-    ml_model.plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
-
-
-def deep_learning_main_3categories(folder_path, video_name, filter_name, model_name, feature):
-    # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-
-    # Split data into trainging data and testing data
-    X = ml_model.getFeaturesData(feature, df)
-    y = df['BehaviorType']
-    X_train, X_test, y_train, y_test = ml_model.train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
-
-    # Combine bite and chase
-    for index in range(0, len(df['BehaviorType'].index)):
-        if df['BehaviorType'].iloc[index] == 1 or df['BehaviorType'].iloc[index] == 2:
-            df['BehaviorType'].iloc[index] = 1
-
-
-    # Reshape data, X_train.shape[0]: number of train data, X_test.shape[0]: number of test data
-    X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1]).astype('float32')
-    X_test = X_test.reshape(X_test.shape[0], 1, X_test.shape[1]).astype('float32')
-    # One-hot encoding, convert class vectors to binary class matrices
-    y_train = to_categorical(y_train)
-    y_test = to_categorical(y_test)
-
-    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-
-    # model
-    model = cnn_model_1(X_train, y_train)
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    start_time = ml_model.process_time()
-    model.fit(X_train, y_train, validation_split=0.1, batch_size=32, epochs=250, verbose=2, callbacks=[tensorboard_callback])
-    end_time = ml_model.process_time()
-    print(model.summary())
-    print(KB.eval(model.optimizer.lr))
-
-    # Predict
-    predictions = np.argmax(model.predict(X_test), axis=1)
-    y_test = np.argmax(y_test, axis=1)
+    # Setting sorted label and print the labels on screen
+    if class_num == 3:
+        sorted_labels = ['bite & chase', 'display', 'normal']
+    else:
+        sorted_labels = ['bite', 'chase', 'display', 'normal']
+    print("0 -", class_num," means class label names: ", sorted_labels)
 
     # Setting the path for saving confusion matrix pictures
     save_folder = ml_model.create_saving_folder(folder_path)
     
     # Plot confusion matrix for the result
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
     # print("y_test is: ",y_test, "\npred.  is: ", predictions)
     print(ml_model.classification_report(y_test, predictions))
     ml_model.plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, feature, save_folder)
-    print("Execution time: ", end_time - start_time)
-
-
-def getTrainDataInfo(X, y) -> ml_model.Tuple[np.array, np.array, np.array]:
-    # Reshape data, X_train.shape[0]: number of train data, X_test.shape[0]: number of test data
-    X = X.reshape(X.shape[0], 1, X.shape[1]).astype('float32')
-
-    train_X, train_y = X[0], y[0]
-    num_timesteps, num_features, num_outputs = train_X.shape[1], train_X.shape[2], train_y.shape[1]
-    return num_timesteps, num_features, num_outputs
 
 
 def cross_val_predict(model, skfold: ml_model.StratifiedKFold, X: np.array, y: np.array) -> ml_model.Tuple[np.array, np.array, np.array]:
@@ -234,41 +217,53 @@ def cross_val_predict(model, skfold: ml_model.StratifiedKFold, X: np.array, y: n
     return actual_classes, predicted_classes, predicted_proba
 
 
-# def deep_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature):
-#     # Read preprocessed trajectory data
-#     df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+def deep_learning_main_cv_ver(folder_path, video_name, filter_name, model_name, feature, class_num):
+    # Read preprocessed trajectory data
+    df = getDF(folder_path, video_name, filter_name, class_num)
 
-#     # Split data into trainging data and testing data
-#     X = ml_model.getFeaturesData(feature, df)
-#     y = df['BehaviorType']
+    # Split data into trainging data and testing data
+    X = ml_model.getFeaturesData(feature, df)
+    y = df['BehaviorType']
 
-#     skfold = ml_model.StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
+    # Get num_timesteps, num_features, num_outputs
+    X_train, X_test, y_train, y_test = ml_model.train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
+    X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1]).astype('float32')
+    y_train = to_categorical(y_train)  # One-hot encoding
+    num_timesteps, num_features, num_outputs = X_train.shape[1], X_train.shape[2], y_train.shape[1]
 
-#     # Some parameter setting for model
-#     num_timesteps, num_features, num_outputs = getTrainDataInfo(X, y)
+    # Split data evenly among different behavior data type
+    skfold = ml_model.StratifiedKFold(n_splits=10, random_state=99, shuffle=True)
 
-#     # Create model
-#     model = Sequential()
-#     model.add(Input(shape=(num_timesteps, num_features)))
-#     model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
-#     model.add(MaxPooling1D(pool_size=2, padding="same"))
-#     model.add(Flatten())
-#     model.add(Dense(num_outputs, activation='softmax'))
+    # Create model
+    model = Sequential()
+    model.add(Input(shape=(num_timesteps, num_features)))
+    model.add(Conv1D(filters=16, kernel_size=1, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2, padding="same"))
+    model.add(Flatten())
+    model.add(Dense(num_outputs, activation='softmax'))
 
-#     # 10-fold  cross validation
-#     start_time = ml_model.process_time()
-#     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
-#     end_time = ml_model.process_time()
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-#     # Show the testing result with confusion matrix
-#     print(model_name, feature)
-#     print(ml_model.classification_report(actual_classes, predicted_classes))
-#     print("Class number meaning - 1:bite, 2:chase, 3:circle, 4:display, 5:normal")
 
-#     # Setting the path and create a folder to save confusion matrix pictures
-#     save_folder = ml_model.create_saving_folder(folder_path)
+    # 10-fold  cross validation
+    start_time = ml_model.process_time()
+    actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
+    end_time = ml_model.process_time()
+    print(actual_classes, predicted_classes)
 
-#     # Plot the confusion matrix graph on screen, and save it in png format
-#     sorted_labels = ['bite', 'chase', 'display', 'normal']
-#     ml_model.plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
-#     print("Execution time: ", end_time - start_time)
+    # Show the testing result with confusion matrix
+    print(ml_model.classification_report(actual_classes, predicted_classes))
+
+    # Setting sorted label and print the labels on screen
+    if class_num == 3:
+        sorted_labels = ['bite & chase', 'display', 'normal']
+    else:
+        sorted_labels = ['bite', 'chase', 'display', 'normal']
+    print("0 -", class_num," means class label names: ", sorted_labels)
+
+    # Setting the path and create a folder to save confusion matrix pictures
+    save_folder = ml_model.create_saving_folder(folder_path)
+
+    # Plot the confusion matrix graph on screen, and save it in png format
+    ml_model.plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, feature, save_folder)
+    print("Execution time: ", end_time - start_time)

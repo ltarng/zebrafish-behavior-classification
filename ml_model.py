@@ -72,7 +72,8 @@ def getModel(chosen_model):
     elif chosen_model == "RandomForest":
         model_name = "Random Forest"
         # model = RandomForestClassifier(n_estimators=10, criterion="gini", max_features="auto", max_depth="None", random_state=None)  # default
-        model = RandomForestClassifier(max_depth=13, n_estimators=950, criterion="gini", max_features=None)  # best for 4 categories?
+        model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='sqrt')  # best for 4 categories?, good performance in 3cat
+        # model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')  # best for 4 categories?
         # model = RandomForestClassifier(max_depth=None, n_estimators=1000, criterion="gini", max_features=None)  # best for 3 categories
     elif chosen_model == "XGBoost":
         model_name = "XGBoost"
@@ -178,9 +179,33 @@ def machine_learning_main(folder_path, video_name, filter_name, chosen_model, fe
     plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
 
 
-def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_model, feature):
+def getDF(folder_path, video_name, filter_name, class_num):
+    if class_num == 4:
+        df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+    elif class_num == 3:
+        # Read preprocessed trajectory data
+        df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_half_bite_chase.csv')
+
+        # Combine bite and chase, renumber all number of class type
+        temp_df_type = df['BehaviorType'].copy()
+        for index in range(0, len(df['BehaviorType'].index)):
+            if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:  # bite and chase
+                temp_df_type.iloc[index] = 0
+            elif df['BehaviorType'].iloc[index] == 2:  # display
+                temp_df_type.iloc[index] = 1
+            elif df['BehaviorType'].iloc[index] == 3:  # normal
+                temp_df_type.iloc[index] = 2
+            else:
+                print("Index of BehaviorType is not 0, 1, 2 or 3.")
+        df['BehaviorType'] = temp_df_type.copy()
+    else:
+        print("Wrong class_num setting.")
+    return df
+
+
+def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_model, feature, class_num):
     # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+    df = getDF(folder_path, video_name, filter_name, class_num)
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -195,68 +220,32 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
     end_time = process_time()
 
+    # If it is 3 categories, rename model name
+    if class_num == 3:
+        model_name = model_name + "_3categories"
+
     # Show the testing result with confusion matrix
     print(model_name, feature)
     print(classification_report(actual_classes, predicted_classes))
-    print("Class number meaning - 0:bite, 1:chase, 2:display, 3:normal")
+
+    # Setting sorted label and print the labels on screen
+    if class_num == 3:
+        sorted_labels = ['bite & chase', 'display', 'normal']
+    else:
+        sorted_labels = ['bite', 'chase', 'display', 'normal']
+    print("0 -", class_num," means class label names: ", sorted_labels)
 
     # Setting the path and create a folder to save confusion matrix pictures
     save_folder = create_saving_folder(folder_path)
 
     # Plot the confusion matrix graph on screen, and save it in png format
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
     plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_10cv_", filter_name, feature, save_folder)
     print("Execution time: ", end_time - start_time)
 
 
-def machine_learning_main_cv_3categories(folder_path, video_name, filter_name, chosen_model, feature):
+def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature, class_num):
     # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result_half_bite_chase.csv')
-
-    # Split data into trainging data and testing data
-    X = getFeaturesData(feature, df)
-    y = df['BehaviorType']
-
-    # Combine bite and chase, renumber all number of class type
-    for index in range(0, len(df['BehaviorType'].index)):
-        if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1:  # bite and chase
-            df['BehaviorType'].iloc[index] = 0
-        elif df['BehaviorType'].iloc[index] == 2:  # display
-            df['BehaviorType'].iloc[index] = 1
-        elif df['BehaviorType'].iloc[index] == 3:  # normal
-            df['BehaviorType'].iloc[index] = 2
-        else:
-            print("Index of BehaviorType is not 0, 1, 2 or 3.")
-
-    # Select model
-    model, model_name = getModel(chosen_model)
-
-    # 10-fold  cross validation
-    skfold = StratifiedKFold(n_splits=10, random_state=99, shuffle=True)  # Split data evenly among different behavior data type
-    start_time = process_time()
-    actual_classes, predicted_classes, _ = cross_val_predict(model, skfold, X, y)
-    end_time = process_time()
-
-    # Model name
-    model_name = model_name + "_3categories_only"
-
-    # Show the testing result with confusion matrix
-    print(model_name, feature)
-    print(classification_report(actual_classes, predicted_classes))
-    print("Class number meaning - 0:bite&chase, 1:display, 2:normal")
-
-    # Setting the path and create a folder to save confusion matrix pictures
-    save_folder = create_saving_folder(folder_path)
-
-    # Plot the confusion matrix graph on screen, and save it in png format
-    sorted_labels = ['bite & chase', 'display', 'normal']
-    plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name+"_10cv_", filter_name, feature, save_folder)
-    print("Execution time: ", end_time - start_time)
-
-
-def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature):
-    # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
+    df = getDF(folder_path, video_name, filter_name, class_num)
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -269,9 +258,9 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
         model = SVC(random_state=1)
     elif model_name == "RandomForest":
         params = { 
-        'n_estimators': [925, 950, 975],
-        'max_features': [None],
-        'max_depth' : [13,14,15,None],
+        'n_estimators': [800, 850, 900, 950, 1000],
+        'max_features': ['sqt', 'log2', None],
+        'max_depth' : [10,13,15,None],
         'criterion' :['gini']
         }
         model = RandomForestClassifier(random_state=1)
@@ -286,10 +275,13 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
         print("Invalid model name.")
 
     # Do Grid Search, seeking the best combination of parameters
+    skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # For 5-fold cross-validation
     clf = GridSearchCV(estimator=model, 
                     param_grid=params,
-                    scoring='neg_mean_squared_error', 
-                    verbose=1)
+                    scoring='accuracy',
+                    cv=skfold.split(X_train, y_train), 
+                    verbose=1,
+                    n_jobs=3)
     clf.fit(X_train, y_train)
     print("Best parameters:", clf.best_params_)
 

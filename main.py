@@ -53,6 +53,8 @@ def main():
         ifDoTuning = False
         ifDoTraining = True
 
+        class_num = 3
+
         # model_name = "SVM"
         model_name = "RandomForest"
         # model_name = "XGBoost"
@@ -77,7 +79,7 @@ def main():
 
         # 
         if ifDoTuning:
-            ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature)
+            ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_num)
 
         if ifDoTraining:
             # Traditional ML - Test
@@ -85,21 +87,16 @@ def main():
             # ml_model.machine_learning_cross_validation_test(folder_path, "Combined", filter_name, model_name, feature)  # observe the result in every round
 
             ## Usual use
-            ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature)  # 10-fold corss validation
-            # ml_model.machine_learning_main_cv_3categories(folder_path, "Combined", filter_name, model_name, feature)
+            ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_num)  # 10-fold corss validation
 
             # Analysis the correlation of features and classes
             # Compare the features and the impoart features highligh by RF and XGBoost
 
 
-            ## NN ML
-            # CNN_model.deep_learning_main(folder_path, "Combined", filter_name, "1D-CNN", feature)
-            # CNN_model.deep_learning_main_cv_ver(folder_path, "Combined", filter_name, "1D-CNN", feature)  # Under construction
-            # LSTM_model.lstm_main(folder_path, "Combined", filter_name, "LSTM", feature)
-
-            ## Combine bite and chase
-            # CNN_model.deep_learning_main_3categories(folder_path, "Combined", filter_name, "1D-CNN", feature)
-            # LSTM_model.lstm_main_3categories(folder_path, "Combined", filter_name, "LSTM", feature)
+            ## NN ML, under construction
+            # CNN_model.deep_learning_main(folder_path, "Combined", filter_name, "1D-CNN", feature, class_num)
+            # CNN_model.deep_learning_main_cv_ver(folder_path, "Combined", filter_name, "1D-CNN", feature, class_num)  # Under construction
+            # LSTM_model.lstm_main(folder_path, "Combined", filter_name, "LSTM", feature, class_num)
 
 
 if __name__ == '__main__':
