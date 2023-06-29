@@ -4,7 +4,7 @@ from dtaidistance import dtw_ndim
 import math
 from progress.bar import IncrementalBar
 import os
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 
 
 def getPoint(df_fish_x, df_fish_y, index):
@@ -141,7 +141,11 @@ def calculate_angle_between_vectors(a, b):
 
 
 def getVectorAnglesFeature(df_vector_angles):
-    return min(df_vector_angles), max(df_vector_angles), df_vector_angles.mean()
+    min_angle = min(df_vector_angles)
+    max_angle = max(df_vector_angles)
+    avg_angle = round(df_vector_angles.mean(), 2)
+    return min_angle, max_angle, avg_angle
+
 
 def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):
     vector_angles = []
@@ -287,19 +291,6 @@ def calculate_final_result(folder_path, video_name, filter_name):
     # Save the result in a new csv file
     anno_df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result.csv", index = False)
     print("Complete calculation. The file had been saved in: " + folder_path)
-    print("\n")
-
-
-def standarlize_preprocessed_data(folder_path, video_name, filter_name):
-    resource_folder = folder_path + "preprocessed_data/"
-    df = pd.read_csv(resource_folder + video_name + '_' + filter_name + '_preprocessed_result.csv')
-
-    scaler = StandardScaler()
-    start_col, end_col0 = 4, 22
-    df.iloc[:,start_col:end_col0] = scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy())
-    
-    df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_std.csv", index = False)
-    print("Complete Standarlization. The file had been saved in: " + folder_path)
     print("\n")
 
 
