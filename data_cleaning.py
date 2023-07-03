@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import sys
 import os
+from time import process_time
 
 import scipy.ndimage as sn
 import scipy.signal as ss
@@ -27,6 +28,24 @@ def median_filter(df, window_len):
     df_filtered['Fish1_y'] = ss.medfilt(df['Fish1_y'], kernel_size = window_len)
     return df_filtered
 
+def getTransitionObservation(selection):
+    if selection == 1:
+        transition_matrix = [[1, 1, 0, 0],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1],
+                        [0, 0, 0, 1]]
+
+        observation_matrix = [[1, 0, 0, 0],
+                            [0, 0, 1, 0]]
+    elif selection == 2:
+        transition_matrix = [[1, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 1],
+                            [0, 0, 0, 1]]
+
+        observation_matrix = [[1, 0, 0, 0],
+                            [0, 0, 1, 0]]
+    return transition_matrix, observation_matrix
 
 def kalman_filter(df):
     # Reference: https://stackoverflow.com/questions/43377626/how-to-use-kalman-filter-in-python-for-location-data
@@ -92,6 +111,7 @@ def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
     resource_folder = folder_path + "raw_data/"
     df = pd.read_csv(resource_folder + video_name + "_tracked.csv")
 
+    start_time = process_time()
     # Apply filter and save data
     window_len = 3  # window size should be odd number
     df_filtered = pd.DataFrame()
@@ -103,7 +123,9 @@ def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
         df_filtered = kalman_filter(df)
     else:
         sys.exit("filter_name should be 'mean', 'median' or 'kalman', please check the parameter setting in main.py")
+    end_time = process_time()
 
+    print("Data cleaning time: ", end_time - start_time)
     df_filtered.to_csv(save_folder + video_name + "_" + filter_name + "_filtered.csv", index_label="FrameIndex")
     
     # System messages
