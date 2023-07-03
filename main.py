@@ -12,7 +12,9 @@ import image_CNN
 """ GENERAL PARAMETER SETTING """
 folder_path = "D:/Google Cloud (60747050S)/Research/Trajectory Analysis/"
 video_names = ['1-14', '1-22_2nd']
-filter_name = "median"  # filter option: mean, median, kalman
+filter_name = "mean"  # filter option: mean, median, kalman
+# filter_name = "median"  # filter option: mean, median, kalman
+# filter_name = "kalman"  # filter option: mean, median, kalman
 # filter_name = "nofilter"  # use raw data
 
 
@@ -37,10 +39,10 @@ def main():
 
     # Calculate the features for classification and standarlize
     if ifDoPreprocess:
-        ifNotSkipSemi = False
+        ifSkipSemi = True
 
         for index in range(0, len(video_names)):
-            if ifNotSkipSemi:
+            if not ifSkipSemi:
                 preprocess_calculate.calculate_semifinished_result(folder_path, video_names[index], filter_name)
             preprocess_calculate.calculate_final_result(folder_path, video_names[index], filter_name)
             preprocess_calculate.normalize_preprocessed_data(folder_path, video_names[index], filter_name)
@@ -53,10 +55,10 @@ def main():
         ifDoTuning = False
         ifDoTraining = True
 
-        class_num = 3
+        class_num = 4
 
-        # model_name = "SVM"
-        model_name = "RandomForest"
+        model_name = "SVM"
+        # model_name = "RandomForest"
         # model_name = "XGBoost"
 
         # feature = "dtw"  # not bad
@@ -86,12 +88,11 @@ def main():
             # ml_model.machine_learning_main(folder_path, "Combined", filter_name, model_name, feature)  # only test one time
             # ml_model.machine_learning_cross_validation_test(folder_path, "Combined", filter_name, model_name, feature)  # observe the result in every round
 
-            ## Usual use
+            # Usual use
             ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_num)  # 10-fold corss validation
 
             # Analysis the correlation of features and classes
             # Compare the features and the impoart features highligh by RF and XGBoost
-
 
             ## NN ML, under construction
             # CNN_model.deep_learning_main(folder_path, "Combined", filter_name, "1D-CNN", feature, class_num)

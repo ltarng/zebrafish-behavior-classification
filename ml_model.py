@@ -65,23 +65,79 @@ def getModel(chosen_model):
         kernel_name = "linear"
         model_name = chosen_model + '-' + kernel_name
         # model = SVC(kernel="rbf")  # default
-        model = SVC(C=0.1, kernel=kernel_name)
+        model = SVC(C=0.01, kernel=kernel_name)
     elif chosen_model == "DecisionTree":
         model_name = "Decision Tree"
         model = DecisionTreeClassifier()
     elif chosen_model == "RandomForest":
         model_name = "Random Forest"
-        # model = RandomForestClassifier(n_estimators=10, criterion="gini", max_features="auto", max_depth="None", random_state=None)  # default
-        model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='sqrt')  # best for 4 categories?, good performance in 3cat
-        # model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')  # best for 4 categories?
-        # model = RandomForestClassifier(max_depth=None, n_estimators=1000, criterion="gini", max_features=None)  # best for 3 categories
+        # model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='sqrt')  # best for 4 categories?, best performance in 3cat
+        # model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')  # best for 4 categories by tuning
+        # model = RandomForestClassifier(max_depth=7, n_estimators=1000, criterion="gini", max_features='log2')  # best for 3 categories by tuning
+        model = RandomForestClassifier(max_depth=None, n_estimators=1000, criterion="gini", max_features="sqrt")  # almost default, best for 3 categories
     elif chosen_model == "XGBoost":
         model_name = "XGBoost"
         # model = xgb.sklearn.XGBClassifier(max_depth=6, learning_rate=0.3, n_estimators=100, colsample_bytree=1)  # default
-        model = xgb.sklearn.XGBClassifier(max_depth=3, n_estimators=750, colsample_bytree=0.3, learning_rate=0.1)  # best for 4 categories
+        model = xgb.sklearn.XGBClassifier(colsample_bytree=0.5, learning_rate=0.3, max_depth=9, n_estimators=200)  # 66%(m), 77%(m), 65%(no), 78%(no)
+        # model = xgb.sklearn.XGBClassifier(colsample_bytree=0.3, learning_rate=0.15, max_depth=6, n_estimators=250, gamma=3)  # 65%, 77% | 65%, 78%
     else:
         print("Wrong model name! Please input 'SVM' or 'RandomForest'.")
     return model, model_name
+
+
+def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature, class_num):
+    # Read preprocessed trajectory data
+    df = getDF(folder_path, video_name, filter_name, class_num)
+
+    # Split data into trainging data and testing data
+    X = getFeaturesData(feature, df)
+    y = df['BehaviorType']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
+
+    # Define value of parameters for Grid Search
+    if model_name == "SVM":
+        params = [{'kernel': ['linear'],
+                   'C': [0.001,0.005,0.01,0.05,0.1,1]},
+                   {'kernel':['rbf'],
+                    'gamma':['scale', 'auto']}]
+        model = SVC(random_state=1)
+    elif model_name == "RandomForest":
+        params = {'n_estimators': [800,850,900,950,1000], 
+                  'max_features': ['sqt', 'log2', None],
+                  'max_depth' : [9,13,17],
+                  'criterion' :['gini']}
+        model = RandomForestClassifier(random_state=1)
+    elif model_name == "XGBoost":
+        params = {'max_depth': [8,9],
+                  'learning_rate': [0.1, 0.15, 0.2, 0.25, 0.3],
+                  'n_estimators': [150,200,250,300],
+                  'colsample_bytree': [0.3,0.5,0.7],
+                  'gamma': [0,1,2,3,4,5],
+                  'n_jobs': [-1]}
+        model = xgb.sklearn.XGBClassifier(random_state=1)
+    else:
+        print("Invalid model name.")
+
+    # Do Grid Search, seeking the best combination of parameters
+    skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # For 5-fold cross-validation
+    clf = GridSearchCV(estimator=model, 
+                       param_grid=params,
+                       scoring='accuracy',
+                       cv=skfold.split(X_train, y_train), 
+                       verbose=1,
+                       n_jobs=3)
+    grid_result = clf.fit(X_train, y_train)
+
+    # 評估，打分數
+    print(f"最佳準確率: {grid_result.best_score_}，最佳參數組合：{grid_result.best_params_}")
+    # 取得 cross validation 的平均準確率及標準差
+    means = grid_result.cv_results_['mean_test_score']
+    stds = grid_result.cv_results_['std_test_score']
+    params = grid_result.cv_results_['params']
+    for mean, stdev, param in zip(means, stds, params):
+        print(f"平均準確率: {mean}, 標準差: {stdev}, 參數組合: {param}")
+
+    print("Best parameters:", clf.best_params_)
 
 
 def cross_val_predict(model, skfold: StratifiedKFold, X: np.array, y: np.array) -> Tuple[np.array, np.array, np.array]:
@@ -151,34 +207,6 @@ def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, mode
     plt.show()
 
 
-def machine_learning_main(folder_path, video_name, filter_name, chosen_model, feature):
-    # Read preprocessed trajectory data
-    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
-
-    # Split data into trainging data and testing data
-    X = getFeaturesData(feature, df)
-    y = df['BehaviorType']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
-
-    # Select model and training
-    model, model_name = getModel(chosen_model)
-    model.fit(X_train, y_train)
-
-    # Show the testing result with confusion matrix
-    predictions = model.predict(X_test)
-    print(model_name, feature)
-    print(classification_report(y_test, predictions))
-
-    # Setting the path for saving confusion matrix pictures
-    save_folder = folder_path + "confusion_matrix_picture/"
-    if not os.path.exists(save_folder):
-        os.makedirs(save_folder)
-    
-    # Plot the confusion matrix graph on screen, and save it in png format
-    sorted_labels = ['bite', 'chase', 'display', 'normal']
-    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
-
-
 def getDF(folder_path, video_name, filter_name, class_num):
     if class_num == 4:
         df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
@@ -233,7 +261,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
         sorted_labels = ['bite & chase', 'display', 'normal']
     else:
         sorted_labels = ['bite', 'chase', 'display', 'normal']
-    print("0 -", class_num," means class label names: ", sorted_labels)
+    print("Class label 0 ~", class_num," means: ", sorted_labels)
 
     # Setting the path and create a folder to save confusion matrix pictures
     save_folder = create_saving_folder(folder_path)
@@ -243,47 +271,32 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     print("Execution time: ", end_time - start_time)
 
 
-def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature, class_num):
+def machine_learning_main(folder_path, video_name, filter_name, chosen_model, feature):
     # Read preprocessed trajectory data
-    df = getDF(folder_path, video_name, filter_name, class_num)
+    df = pd.read_csv(folder_path + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
 
-    # Define value of parameters for Grid Search
-    if model_name == "SVM":
-        params = [{'kernel': ['linear'],'C': [0.06,0.08,0.1,0.12,0.14]}]
-        model = SVC(random_state=1)
-    elif model_name == "RandomForest":
-        params = { 
-        'n_estimators': [800, 850, 900, 950, 1000],
-        'max_features': ['sqt', 'log2', None],
-        'max_depth' : [10,13,15,None],
-        'criterion' :['gini']
-        }
-        model = RandomForestClassifier(random_state=1)
-    elif model_name == "XGBoost":
-        params = { 'max_depth': [3,6,9,None],
-            'learning_rate': [0.05,0.1, 0.3, 0.5],
-            'n_estimators': [500, 750, 1000],
-            'colsample_bytree': [0.1, 0.3, 0.5],
-            'n_jobs': [-1]}
-        model = xgb.sklearn.XGBClassifier(random_state=1)
-    else:
-        print("Invalid model name.")
+    # Select model and training
+    model, model_name = getModel(chosen_model)
+    model.fit(X_train, y_train)
 
-    # Do Grid Search, seeking the best combination of parameters
-    skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # For 5-fold cross-validation
-    clf = GridSearchCV(estimator=model, 
-                    param_grid=params,
-                    scoring='accuracy',
-                    cv=skfold.split(X_train, y_train), 
-                    verbose=1,
-                    n_jobs=3)
-    clf.fit(X_train, y_train)
-    print("Best parameters:", clf.best_params_)
+    # Show the testing result with confusion matrix
+    predictions = model.predict(X_test)
+    print(model_name, feature)
+    print(classification_report(y_test, predictions))
+
+    # Setting the path for saving confusion matrix pictures
+    save_folder = folder_path + "confusion_matrix_picture/"
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+    
+    # Plot the confusion matrix graph on screen, and save it in png format
+    sorted_labels = ['bite', 'chase', 'display', 'normal']
+    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
 
 
 def machine_learning_cross_validation_test(folder_path, video_name, filter_name, chosen_model, feature):

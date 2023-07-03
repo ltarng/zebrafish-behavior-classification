@@ -300,7 +300,7 @@ def normalize_preprocessed_data(folder_path, video_name, filter_name):
 
     scaler = MinMaxScaler()
     start_col, end_col0 = 4, 22
-    df.iloc[:,start_col:end_col0] = scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy())
+    df.iloc[:,start_col:end_col0] = round(scaler.fit_transform(df.iloc[:,start_col:end_col0].to_numpy()), 2)
     
     df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_nor.csv", index = False)
     print("Complete Normalization. The file had been saved in: " + folder_path)
