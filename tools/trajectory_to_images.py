@@ -144,7 +144,7 @@ def plot_fight_trajectory_to_images(folder_path, traj_type, video_name, filter_n
     anno_df = pd.read_csv(anno_info_file_path)
 
     # Make behavior dictionary
-    behavior_dict = {'normal': 1, 'display': 2, 'circle': 3, 'chase': 4, 'bite': 5}
+    behavior_dict = {'bite': 0, 'chase': 1, 'display': 2, 'normal': 3}
 
     # Plot and save the trajectories as png files
     progress_bar_title = "Progress of Saving Trajectory Images (" + video_name+ "): "

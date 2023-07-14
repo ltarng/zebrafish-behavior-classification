@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 
 def combine_preprocessed_files(folder_path, video_names, filter_name, filename_tail):
@@ -22,12 +23,16 @@ def combine_preprocessed_files(folder_path, video_names, filter_name, filename_t
     combined_df = combined_df[cols]
     print(combined_df)
 
+    # Setting the path for saving confusion matrix pictures
+    save_folder = folder_path + "combined_preprocessed_data/"
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
     # Save the combined data in main folder
-    combined_df.to_csv(folder_path + "Combined" + "_" + filter_name + filename_tail, index = False)
+    combined_df.to_csv(save_folder + "Combined" + "_" + filter_name + filename_tail, index = False)
     print("Successfully combined two csv files.")
 
 
 def combine_preprocessed_main(folder_path, video_names, filter_name):
     combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result.csv")
-    # combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_std.csv")
     combine_preprocessed_files(folder_path, video_names, filter_name, "_preprocessed_result_nor.csv")

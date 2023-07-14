@@ -121,8 +121,11 @@ def data_cleaning(folder_path, video_name, filter_name, ifPlotTraj):
         df_filtered = median_filter(df, window_len)
     elif filter_name == 'kalman':
         df_filtered = kalman_filter(df)
+    elif filter_name == 'nofilter':
+        print("No need to do data-cleaning.")
+        return
     else:
-        sys.exit("filter_name should be 'mean', 'median' or 'kalman', please check the parameter setting in main.py")
+        sys.exit("filter_name should be 'mean', 'median', 'kalman' or 'nofilter', please check the parameter setting in main.py")
     end_time = process_time()
 
     print("Data cleaning time: ", end_time - start_time)

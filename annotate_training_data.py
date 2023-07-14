@@ -66,7 +66,7 @@ def sort_annotation_information(folder_path, video_name):
         
         # Annotate a behavior
         if behavior_name in behavior_dict.keys():
-            anno_df['BehaviorType'].iloc[index] = behavior_dict[behavior_name]
+            anno_df['BehaviorType'].iloc[index] = behavior_dict[behavior_name]  # SettingWithCopyWarning
             # print(behavior_name, behavior_dict[behavior_name])
         else:
             anno_df['BehaviorType'].iloc[index] = 100
