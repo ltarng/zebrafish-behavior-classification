@@ -202,7 +202,7 @@ def cross_val_predict(model, chosen_model, skfold: StratifiedKFold, X: np.array,
     predicted_classes = np.empty([0], dtype=int)
     predicted_proba = np.empty([0, no_classes]) 
 
-    for i in range(0, 10):
+    for i in range(0, 50):
         for train_ndx, test_ndx in skfold.split(X, y):
 
             train_X, train_y, test_X, test_y = X[train_ndx], y[train_ndx], X[test_ndx], y[test_ndx]

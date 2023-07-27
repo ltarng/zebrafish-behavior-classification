@@ -82,7 +82,7 @@ def calculate_dtw(start_frame, end_frame, traj_df_f0_x, traj_df_f0_y, traj_df_f1
     return round(dtw_distance, 2)
 
 
-def calculate_avg_velocity(start_frame, end_frame, traj_df):
+def calculate_avg_velocity(start_frame, end_frame, traj_df):  # average moving interframe distance
     avg_dist = round(traj_df[start_frame:end_frame-1].mean(), 2)
     return round(avg_dist, 2)
 
@@ -93,18 +93,18 @@ def get_min_max(start_frame, end_frame, traj_df):
     return min_value, max_value
 
 
-def calculate_movement_length(start_frame, end_frame, traj_df):
+def calculate_movement_length(start_frame, end_frame, traj_df):  # total moving disance
     movement_length = traj_df[start_frame:end_frame-1].sum()
     return round(movement_length, 2)
 
 
-def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # Under construction
+def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # summation of moving vectors
     fish_mean_shift_x = traj_df_x[start_frame:end_frame-1].sum()
     fish_mean_shift_y = traj_df_y[start_frame:end_frame-1].sum()
     return fish_mean_shift_x, fish_mean_shift_y
 
 
-def calculate_angle_between_vectors(a, b):
+def calculate_angle_between_vectors(a, b):  # an angle between two interframe moving vectors
     # Transform list to numpy array
     v1, v2 = np.array(a), np.array(b)
 
@@ -147,7 +147,7 @@ def getVectorAnglesFeature(df_vector_angles):
     return min_angle, max_angle, avg_angle
 
 
-def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):
+def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):  # angles between two vectors
     vector_angles = []
     for index in range(start_frame, end_frame):
         vector_angle = calculate_angle_between_vectors([df_fish0_x_shift.iloc[index], df_fish0_y_shift.iloc[index]], 
@@ -157,7 +157,7 @@ def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y
     return df
 
 
-def calculate_same_direction_ratio(df_vector_angles):
+def calculate_same_direction_ratio(df_vector_angles):  # SDR (Same Direction Ratio)
     duration_time = len(df_vector_angles.index)
     same_direction_frames = 0
     for index in range(duration_time):  # If x-axis is same direction and y-axis is same direction, counter+=1
@@ -299,7 +299,7 @@ def normalize_preprocessed_data(folder_path, video_name, filter_name):
     df = pd.read_csv(resource_folder + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
     scaler = MinMaxScaler()
-    start_col, end_col = 4, 22  # be aware of this range
+    start_col, end_col = 4, 22  # be aware of this range if you change the amount of features
     df.iloc[:,start_col:end_col] = scaler.fit_transform(df.iloc[:,start_col:end_col].to_numpy())
     
     df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result_nor.csv", index = False)
