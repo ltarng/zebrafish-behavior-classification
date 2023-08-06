@@ -55,12 +55,12 @@ def main():
         ifDoTuning = False
         ifDoTraining = True
 
-        class_num = 3
+        class_num = 2
 
-        # model_name = "SVM"
-        model_name = "RandomForest"
+        model_name = "SVM"
+        # model_name = "RandomForest"
         # model_name = "XGBoost"
-
+  
         # feature = "dtw"  # not bad
         # feature = "movement_length"  # bad
         # feature = "velocity" # not bad
@@ -75,7 +75,8 @@ def main():
 
         # 
         if ifDoTuning:
-            ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)
+            ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_num)
+            # ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)
 
         if ifDoTraining:
             # Traditional ML - Test

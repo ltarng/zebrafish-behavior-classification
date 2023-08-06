@@ -46,22 +46,12 @@ def getFeaturesData(feature, df):
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
                              df['same_direction_ratio'], df['avg_vector_angle'], df['min_vector_angle'], df['max_vector_angle']))
-        feature_names = ['AVG1', 'AVG2, DTW',
-                         'Dist1', 'Dist2',
-                         'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
-                         'V1_x', 'V1_y', 'V2_x', 'V2_y',
-                         'SDR', 'avg(A)', 'min(A)', 'max(A)']
     elif feature == "dtw_velocities_direction_sdr_partangles_length":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_movement_length'], df['Fish1_movement_length'], 
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
                              df['same_direction_ratio'], df['min_vector_angle'], df['max_vector_angle']))
-        feature_names = ['AVG1', 'AVG2, DTW',
-                         'Dist1', 'Dist2',
-                         'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
-                         'V1_x', 'V1_y', 'V2_x', 'V2_y',
-                         'SDR', 'min(A)', 'max(A)']
     elif feature == "vecangle_related":
         X = np.column_stack(( df['same_direction_ratio'],df['avg_vector_angle'],df['min_vector_angle'], df['max_vector_angle']))
     else:
@@ -102,7 +92,7 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
     X = getFeaturesData(feature, df)
     y = df['BehaviorType']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
-
+    
     # Define value of parameters for Grid Search
     if model_name == "SVM":
         params = [{'kernel': ['linear'],
@@ -112,10 +102,10 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
                    ]
         model = SVC(random_state=1)
     elif model_name == "RandomForest":
-        params = {'n_estimators': [700,750,800,900,1000], 
+        params = {'n_estimators': [500,600,700,800,900,1000], 
                   'max_features': ['sqrt', 'log2', None],
-                  'max_depth' : [6,9,12],
-                  'criterion' :['gini']}
+                  'max_depth' : [6,7,8,9,10,11,12,13,14,15],
+                  'criterion' :['gini','entropy']}
         model = RandomForestClassifier(random_state=1)
     elif model_name == "XGBoost":
         params = {'max_depth': [8,9],
@@ -140,7 +130,7 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
 
     # Show the result of all hyper-parameter combination
     print(f"Best accuracy: {grid_result.best_score_}, best parameter combination: {grid_result.best_params_}")
-    # 取得 cross validation 的平均準確率及標準差
+    # Get mean accuracy and standard deviation in cross validation
     means = grid_result.cv_results_['mean_test_score']
     stds = grid_result.cv_results_['std_test_score']
     params = grid_result.cv_results_['params']
@@ -160,14 +150,22 @@ def f_importances(coef, names):
     plt.show()
 
 
-def plot_feature_importance(model_, chosen_model, X):
+def plot_feature_importance(model_, chosen_model, features):
     # Plot feature importances graph
-    feature_names = ['AVG1', 'AVG2, DTW',
-                    'Dist1', 'Dist2',
-                    'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
-                    'V1_x', 'V1_y', 'V2_x', 'V2_y',
-                    'SDR', 'avg(A)', 'min(A)', 'max(A)']
-
+    if features == 'dtw_velocities_direction_sdr_partangles_length':
+        feature_names = ['AVG1', 'AVG2', 'DTW',
+                        'Dist1', 'Dist2',
+                        'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
+                        'V1_x', 'V1_y', 'V2_x', 'V2_y',
+                        'SDR', 'min(A)', 'max(A)']
+    elif features == 'dtw_velocities_direction_sdr_angles_length':
+        feature_names = ['AVG1', 'AVG2', 'DTW',
+                        'Dist1', 'Dist2',
+                        'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
+                        'V1_x', 'V1_y', 'V2_x', 'V2_y',
+                        'SDR', 'avg(A)', 'min(A)', 'max(A)']
+    else:
+        print("Invalid features name.")
     if chosen_model == "SVM":
         for i in range(len(model_.coef_)):  # The weight of each features
             f_importances(model_.coef_[i], feature_names)
@@ -191,7 +189,7 @@ def plot_feature_importance(model_, chosen_model, X):
         print("This model do not exist, please check variable chosen_model: ", chosen_model)
 
 
-def cross_val_predict(model, chosen_model, skfold: StratifiedKFold, X: np.array, y: np.array) -> Tuple[np.array, np.array, np.array]:
+def cross_val_predict(model, chosen_model, feature, skfold: StratifiedKFold, X: np.array, y: np.array) -> Tuple[np.array, np.array, np.array]:
     # Reference: https://towardsdatascience.com/how-to-plot-a-confusion-matrix-from-a-k-fold-cross-validation-b607317e9874
     model_ = cp.deepcopy(model)
     no_classes = len(np.unique(y))
@@ -216,7 +214,7 @@ def cross_val_predict(model, chosen_model, skfold: StratifiedKFold, X: np.array,
             except:
                 predicted_proba = np.append(predicted_proba, np.zeros((len(test_X), no_classes), dtype=float), axis=0)
 
-    plot_feature_importance(model_, chosen_model, X)  # plot feature importance of the model
+    plot_feature_importance(model_, chosen_model, feature)  # plot feature importance of the model
 
     return actual_classes, predicted_classes, predicted_proba
 
@@ -265,6 +263,21 @@ def getDF(folder_path, video_name, filter_name, class_num):
             else:
                 print("Index of BehaviorType is not 0, 1, 2 or 3.")
         df['BehaviorType'] = temp_df_type.copy()
+    elif class_num == 2:
+        # Read preprocessed trajectory data
+        # df = pd.read_csv(folder_path + "combined_preprocessed_data/" + video_name + '_' + filter_name + '_preprocessed_result_2cat.csv')  # 20 bite, 20 chase, 20 display, 60 normal
+        df = pd.read_csv(folder_path + "combined_preprocessed_data/" + video_name + '_' + filter_name + '_preprocessed_result_2cat_BCN.csv')  # 30 bite, 30 chase, 60 normal
+
+        # Combine bite and chase, renumber all number of class type
+        temp_df_type = df['BehaviorType'].copy()
+        for index in range(0, len(df['BehaviorType'].index)):
+            if df['BehaviorType'].iloc[index] == 0 or df['BehaviorType'].iloc[index] == 1 or df['BehaviorType'].iloc[index] == 2:  # bite and chase and display
+                temp_df_type.iloc[index] = 0
+            elif df['BehaviorType'].iloc[index] == 3:  # normal
+                temp_df_type.iloc[index] = 1
+            else:
+                print("Index of BehaviorType is not 0, 1, 2 or 3.")
+        df['BehaviorType'] = temp_df_type.copy()
     else:
         print("Wrong class_num setting.")
     return df
@@ -285,12 +298,14 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     k_num = 5
     skfold = StratifiedKFold(n_splits=k_num, shuffle=True)  # Split data evenly among different behavior data type
     start_time = process_time()
-    actual_classes, predicted_classes, _ = cross_val_predict(model, chosen_model, skfold, X, y)
+    actual_classes, predicted_classes, _ = cross_val_predict(model, chosen_model, feature, skfold, X, y)
     end_time = process_time()
 
-    # If it is 3 categories, rename model name
+    # If it is 2 or 3 categories, rename model name
     if class_num == 3:
         model_name = model_name + "_3categories"
+    elif class_num == 2:
+        model_name = model_name + "_2categories"
 
     # Show the testing result with confusion matrix
     print(model_name, feature)
@@ -299,6 +314,8 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     # Setting sorted label and print the labels on screen
     if class_num == 3:
         sorted_labels = ['bite & chase', 'display', 'normal']
+    elif class_num == 2:
+        sorted_labels = ['abnormal', 'normal']
     else:
         sorted_labels = ['bite', 'chase', 'display', 'normal']
     print("Class label 0 ~", class_num," means: ", sorted_labels)
