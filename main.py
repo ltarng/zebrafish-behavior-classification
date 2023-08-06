@@ -3,18 +3,16 @@ import preprocess_calculate
 import data_cleaning
 import ml_model
 import combine_data
-import CNN_model
-import LSTM_model
-import image_CNN
-
+import os
 
 
 """ GENERAL PARAMETER SETTING """
-folder_path = "D:/Google Cloud (60747050S)/Research/Trajectory Analysis/"
+folder_path = os.getcwd().replace('\\', '/') + '/'  # Get current working direction
 video_names = ['1-14', '1-22_2nd']
-# filter_name = "mean"  # filter option: mean, median, kalman
-# filter_name = "median"  # filter option: mean, median, kalman
-# filter_name = "kalman"  # filter option: mean, median, kalman
+# Filter option: mean, median, kalman | use raw data: nofilter
+# filter_name = "mean"
+# filter_name = "median"
+# filter_name = "kalman"
 filter_name = "nofilter"  # use raw data
 
 
@@ -25,6 +23,7 @@ def main():
     ifDoPreprocess = False
     ifDoAnalysis = True
 
+    print(folder_path)
     # Data cleaning step
     if ifDoDataCleaning:
         ifPlotTraj = False
@@ -55,44 +54,24 @@ def main():
         ifDoTuning = False
         ifDoTraining = True
 
-        class_num = 2
+        class_num = 2  # option: 2 (normal/abnormal), 3 (high/moderate/low aggression), 4 (bite/chase/display/normal)
 
-        model_name = "SVM"
+        # model option: 'SVM', 'RandomForest', 'XGBoost'
+        model_name = "SVM"  
         # model_name = "RandomForest"
         # model_name = "XGBoost"
-  
-        # feature = "dtw"  # not bad
-        # feature = "movement_length"  # bad
-        # feature = "velocity" # not bad
-        # feature = "min_max_velocity"  # Good
-        # feature = "direction"  # ok
-        # feature = "min_max_vector_angle"  # fine
-        # feature = "same_direction_ratio"  # bad
-        # feature = "avg_vector_angle"  # fine
 
-        feature = "dtw_velocities_direction_sdr_partangles_length"  # "dtw_dist_speed_direction_sdr_partangles_length"
+        feature = "dtw_velocities_direction_sdr_partangles_length"
         # feature = "dtw_velocities_direction_sdr_angles_length"
 
-        # 
         if ifDoTuning:
-            ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_num)
-            # ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)
+            ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_num)  # non-normalization data
+            # ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)  # using normalization data
 
         if ifDoTraining:
-            # Traditional ML - Test
-            # ml_model.machine_learning_main(folder_path, "Combined", filter_name, model_name, feature)  # only test one time
-
             # Usual use
-            ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_num)
+            ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_num)  # non-normalization data
             # ml_model.machine_learning_main_cv_ver(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)  # using normalized data
-
-            # Analysis the correlation of features and classes
-            # Compare the features and the impoart features highligh by RF and XGBoost
-
-            # NN ML, under construction
-            # CNN_model.deep_learning_main(folder_path, "Combined", filter_name, "1D-CNN", feature, class_num)
-            # CNN_model.deep_learning_main_cv_ver(folder_path, "Combined", filter_name, "1D-CNN", feature, class_num)  # Under construction
-            # LSTM_model.lstm_main(folder_path, "Combined", filter_name, "LSTM", feature, class_num)
 
 
 if __name__ == '__main__':

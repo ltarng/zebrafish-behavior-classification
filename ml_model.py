@@ -35,11 +35,6 @@ def getFeaturesData(feature, df):
     elif feature == "min_max_vector_angle":
         X = np.column_stack((df['min_vector_angle'], df['max_vector_angle']))
     # Combined Features
-    elif feature == "dtw_velocity_related_direction_sdr":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
-                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio']))
     elif feature == "dtw_velocities_direction_sdr_angles_length":
         X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
                              df['Fish0_movement_length'], df['Fish1_movement_length'], 
@@ -52,8 +47,6 @@ def getFeaturesData(feature, df):
                              df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
                              df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
                              df['same_direction_ratio'], df['min_vector_angle'], df['max_vector_angle']))
-    elif feature == "vecangle_related":
-        X = np.column_stack(( df['same_direction_ratio'],df['avg_vector_angle'],df['min_vector_angle'], df['max_vector_angle']))
     else:
         print("Error: feature name does not exist.")
     return X
@@ -71,14 +64,13 @@ def getModel(chosen_model):
         model = DecisionTreeClassifier()
     elif chosen_model == "RandomForest":
         model_name = "Random Forest"
-        # model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='sqrt')  # 63%|65%(14sec), 78%(14.6sec) | 65%(29.1sec), 78%(26.9sec)
-        model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')  # best 4cat by GSCV, 65%(14sec), 78%(13.5sec) | 66%(28.6sec), 78%(25.2sec)
+        model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')
         # model = RandomForestClassifier(max_depth=6, n_estimators=900, criterion="gini", max_features='log2')  # normalization for 4cat
     elif chosen_model == "XGBoost":
         model_name = "XGBoost"
-        # model = xgb.sklearn.XGBClassifier(max_depth=6, learning_rate=0.3, n_estimators=100, colsample_bytree=1)  # default
-        model = xgb.sklearn.XGBClassifier(colsample_bytree=0.5, learning_rate=0.3, max_depth=9, n_estimators=200)  # 66%(m), 77%(m), 65%(no), 78%(no)
-        # model = xgb.sklearn.XGBClassifier(colsample_bytree=0.3, learning_rate=0.15, max_depth=6, n_estimators=250, gamma=3)  # 65%, 77% | 65%, 78%
+        # model = xgb.sklearn.XGBClassifier(max_depth=6, learning_rate=0.3, n_estimators=100, colsample_bytree=1)  # default parameter setting
+        model = xgb.sklearn.XGBClassifier(colsample_bytree=0.5, learning_rate=0.3, max_depth=9, n_estimators=200)
+        # model = xgb.sklearn.XGBClassifier(colsample_bytree=0.3, learning_rate=0.15, max_depth=6, n_estimators=250, gamma=3)
     else:
         print("Wrong model name! Please check the variable 'model_name' in main.py.")
     return model, model_name
@@ -86,7 +78,7 @@ def getModel(chosen_model):
 
 def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature, class_num):
     # Read preprocessed trajectory data
-    df = getDF(folder_path, video_name, filter_name, class_num)
+    df = getDataFrame(folder_path, video_name, filter_name, class_num)
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -200,7 +192,7 @@ def cross_val_predict(model, chosen_model, feature, skfold: StratifiedKFold, X: 
     predicted_classes = np.empty([0], dtype=int)
     predicted_proba = np.empty([0, no_classes]) 
 
-    for i in range(0, 50):
+    for i in range(0, 50):  # Setting how many rounds to do training. For example, range(0, 50) is to observe total training result for 50 rounds
         for train_ndx, test_ndx in skfold.split(X, y):
 
             train_X, train_y, test_X, test_y = X[train_ndx], y[train_ndx], X[test_ndx], y[test_ndx]
@@ -214,7 +206,8 @@ def cross_val_predict(model, chosen_model, feature, skfold: StratifiedKFold, X: 
             except:
                 predicted_proba = np.append(predicted_proba, np.zeros((len(test_X), no_classes), dtype=float), axis=0)
 
-    plot_feature_importance(model_, chosen_model, feature)  # plot feature importance of the model
+    # Plot feature importance of the model
+    plot_feature_importance(model_, chosen_model, feature)
 
     return actual_classes, predicted_classes, predicted_proba
 
@@ -230,7 +223,6 @@ def create_saving_folder(folder_path):
 def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, model_name, filter_name, feature, save_folder):
     cm = confusion_matrix(actual_classes, predicted_classes)
     sns.heatmap(cm, square=True, annot=True, fmt="d", cmap='Blues', xticklabels=sorted_labels, yticklabels=sorted_labels)
-    # sns.despine(left=False, right=False, top=False, bottom=False)
 
     # Text part
     plt.title('Confusion Matrix of ' + model_name + ' Classifier' + "\n" + 
@@ -244,7 +236,7 @@ def plot_confusion_matrix(actual_classes, predicted_classes, sorted_labels, mode
     plt.show()
 
 
-def getDF(folder_path, video_name, filter_name, class_num):
+def getDataFrame(folder_path, video_name, filter_name, class_num):
     if class_num == 4:
         df = pd.read_csv(folder_path + "combined_preprocessed_data/" + video_name + '_' + filter_name + '_preprocessed_result.csv')
     elif class_num == 3:
@@ -283,9 +275,9 @@ def getDF(folder_path, video_name, filter_name, class_num):
     return df
 
 
-def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_model, feature, class_num):
+def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_model, feature, class_num):  # cross-validation version
     # Read preprocessed trajectory data
-    df = getDF(folder_path, video_name, filter_name, class_num)
+    df = getDataFrame(folder_path, video_name, filter_name, class_num)
 
     # Split data into trainging data and testing data
     X = getFeaturesData(feature, df)
@@ -295,7 +287,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     model, model_name = getModel(chosen_model)
 
     # k-fold  cross validation
-    k_num = 5
+    k_num = 5  # number of k
     skfold = StratifiedKFold(n_splits=k_num, shuffle=True)  # Split data evenly among different behavior data type
     start_time = process_time()
     actual_classes, predicted_classes, _ = cross_val_predict(model, chosen_model, feature, skfold, X, y)
@@ -316,7 +308,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
         sorted_labels = ['bite & chase', 'display', 'normal']
     elif class_num == 2:
         sorted_labels = ['abnormal', 'normal']
-    else:
+    else:  # 4 categories
         sorted_labels = ['bite', 'chase', 'display', 'normal']
     print("Class label 0 ~", class_num," means: ", sorted_labels)
 
@@ -328,7 +320,7 @@ def machine_learning_main_cv_ver(folder_path, video_name, filter_name, chosen_mo
     print("Execution time: ", end_time - start_time)
 
 
-def machine_learning_main(folder_path, video_name, filter_name, chosen_model, feature):
+def machine_learning_main(folder_path, video_name, filter_name, chosen_model, feature):  # for test
     # Read preprocessed trajectory data
     df = pd.read_csv(folder_path + "combined_preprocessed_data/" + video_name + '_' + filter_name + '_preprocessed_result.csv')
 
@@ -353,13 +345,4 @@ def machine_learning_main(folder_path, video_name, filter_name, chosen_model, fe
     
     # Plot the confusion matrix graph on screen, and save it in png format
     sorted_labels = ['bite', 'chase', 'display', 'normal']
-    # plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
-
-    features_names = ['AVG_1', 'AVG_2, DTW',
-                    'Dist_1', 'Dist_2',
-                    'max(D_1)', 'max(D_2)', 'min(D_1)', 'min(D_2)',
-                    'V_1_x', 'V_1_y', 'V_2_x', 'V_2_y',
-                    'SDR', 'avg(A)', 'min(A)', 'max(A)']
-
-    if chosen_model == "SVM":
-        f_importances(model.coef_[0], features_names)
+    plot_confusion_matrix(y_test, predictions, sorted_labels, model_name, filter_name, feature, save_folder)
