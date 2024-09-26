@@ -21,49 +21,60 @@ def calculate_interframe_vector(p0, p1):
     return x_shift, y_shift
 
 
+def assign_temp_columns(df, column_names):
+    # Create copies of the specified columns to prevent SettingWithCopyWarning.
+    temp_columns = {}
+    for column in column_names:
+        temp_columns[column] = df[column].copy()
+    return temp_columns
+
+
+def update_temp_df(temp_columns, index, df, fish_prefix):
+    """Assign values from temporary variables back to the dataframe."""
+    # calculate the distance between: frame n to frame n+1 
+    temp_columns[fish_prefix + 'interframe_movement_dist'].iloc[index] = calculate_interframe_distance(
+        getPoint(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index), 
+        getPoint(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index+1)
+    )
+    # calculate the moving direction from frame n to frame n+1
+    temp_columns[fish_prefix + 'interframe_moving_direction_x'].iloc[index], temp_columns[fish_prefix + 'interframe_moving_direction_y'].iloc[index] = calculate_interframe_vector(
+        getPoint(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index), 
+        getPoint(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index+1)
+    )
+
+
+def save_temp_columns_back(df, temp_columns):
+    for column, temp_column in temp_columns.items():
+        df[column] = temp_column.copy()
+
+
 def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calculate distance and direction between frames
     # Read trajectory data
     resource_folder = folder_path + "annotated_data/"
     file_path = resource_folder + video_name + "_" + filter_name + "_filtered_annotated.csv"
     df = pd.read_csv(file_path)
 
-    # Create a new column, and set default values with 0
-    df['Fish0_interframe_movement_dist'] = 0
-    df['Fish1_interframe_movement_dist'] = 0
-    df['Fish0_interframe_moving_direction_x'] = 0
-    df['Fish0_interframe_moving_direction_y'] = 0
-    df["Fish1_interframe_moving_direction_x"] = 0
-    df["Fish1_interframe_moving_direction_y"] = 0
+    # Initialize columns
+    column_names = ['Fish0_interframe_movement_dist', 'Fish1_interframe_movement_dist',
+                    'Fish0_interframe_moving_direction_x', 'Fish0_interframe_moving_direction_y',
+                    "Fish1_interframe_moving_direction_x", "Fish1_interframe_moving_direction_y"]
 
-    # Use temporary variable to prevent SettingWithCopyWarning problem
-    temp_df_fish0_dist = df['Fish0_interframe_movement_dist'].copy()
-    temp_df_fish1_dist = df['Fish1_interframe_movement_dist'].copy()
-    temp_df_fish0_direction_x = df['Fish0_interframe_moving_direction_x'].copy()
-    temp_df_fish0_direction_y = df['Fish0_interframe_moving_direction_y'].copy()
-    temp_df_fish1_direction_x = df["Fish1_interframe_moving_direction_x"].copy()
-    temp_df_fish1_direction_y = df["Fish1_interframe_moving_direction_y"].copy()
+    for column in column_names:
+            df[column] = 0
+
+    # Create temporary columns to prevent SettingWithCopyWarning
+    temp_columns = assign_temp_columns(df, column_names)
 
     # Calculate moving distance in the same trajectory interval between two trajectories
     with IncrementalBar(video_name + ' - Progress of Basic Caculation', max=len(df.index)) as bar:  # with a progress bar
         for index in range(0, len(df.index)-1):
-            # calculate the distance between: frame n to frame n+1 
-            temp_df_fish0_dist.iloc[index] = calculate_interframe_distance(getPoint(df['Fish0_x'], df['Fish0_y'], index), getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-            temp_df_fish1_dist.iloc[index] = calculate_interframe_distance(getPoint(df['Fish1_x'], df['Fish1_y'], index), getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
-
-            # calculate the moving direction from frame n to frame n+1
-            temp_df_fish0_direction_x.iloc[index], temp_df_fish0_direction_y.iloc[index] = calculate_interframe_vector(getPoint(df['Fish0_x'], df['Fish0_y'], index), 
-                                                                                                                       getPoint(df['Fish0_x'], df['Fish0_y'], index+1))
-            temp_df_fish1_direction_x.iloc[index], temp_df_fish1_direction_y.iloc[index] = calculate_interframe_vector(getPoint(df['Fish1_x'], df['Fish1_y'], index), 
-                                                                                                                       getPoint(df['Fish1_x'], df['Fish1_y'], index+1))
+            update_temp_df(temp_columns, index, df, 'Fish0_')
+            update_temp_df(temp_columns, index, df, 'Fish1_')
             bar.next()
 
-    # Remeber to save the result from the temporary variable
-    df['Fish0_interframe_movement_dist'] = temp_df_fish0_dist.copy()
-    df['Fish1_interframe_movement_dist'] = temp_df_fish1_dist.copy()
-    df['Fish0_interframe_moving_direction_x'] = temp_df_fish0_direction_x.copy()
-    df['Fish0_interframe_moving_direction_y'] = temp_df_fish0_direction_y.copy()
-    df["Fish1_interframe_moving_direction_x"] = temp_df_fish1_direction_x.copy()
-    df["Fish1_interframe_moving_direction_y"] = temp_df_fish1_direction_y.copy()
+    # Save results from the temporary columns
+    save_temp_columns_back(df, temp_columns)
+
 
     # Setting save file path. If folder is not exist, create a new one
     save_folder = folder_path + "preprocessed_data/"
@@ -173,6 +184,19 @@ def calculate_same_direction_ratio(df_vector_angles):  # SDR (Same Direction Rat
     return round(same_direction_ratio, 2)
 
 
+def assign_feature_columns(anno_df):
+    columns = ['DTW_distance', 'Fish0_avg_velocity', 'Fish1_avg_velocity',
+               'Fish0_min_velocity', 'Fish1_min_velocity', 'Fish0_max_velocity', 'Fish1_max_velocity',
+               'Fish0_movement_length', 'Fish1_movement_length', 'movement_length_differnece',
+               'Fish0_moving_direction_x', 'Fish0_moving_direction_y', "Fish1_moving_direction_x", "Fish1_moving_direction_y",
+               'same_direction_ratio', 'min_vector_angle', 'max_vector_angle', 'avg_vector_angle']
+
+    for column in columns:
+        anno_df[column] = 0
+    
+    return assign_temp_columns(anno_df, columns)
+
+
 def calculate_final_result(folder_path, video_name, filter_name):
     # Read trajectory data
     resource_folder = folder_path + "preprocessed_data/"
@@ -184,114 +208,58 @@ def calculate_final_result(folder_path, video_name, filter_name):
     anno_file_path = anno_resource_folder + video_name + "_annotation_information_sorted.csv"
     anno_df = pd.read_csv(anno_file_path)
 
-    # Add a new column name 'DTW_distance' in anno_df, and set default values with 0
-    anno_df['DTW_distance'] = 0
-    anno_df['Fish0_avg_velocity'] = 0
-    anno_df['Fish1_avg_velocity'] = 0
-    anno_df['Fish0_min_velocity'] = 0
-    anno_df['Fish1_min_velocity'] = 0
-    anno_df['Fish0_max_velocity'] = 0
-    anno_df['Fish1_max_velocity'] = 0
-    anno_df['Fish0_movement_length'] = 0
-    anno_df['Fish1_movement_length'] = 0
-    anno_df['movement_length_differnece'] = 0
-    anno_df['Fish0_moving_direction_x'] = 0
-    anno_df['Fish0_moving_direction_y'] = 0
-    anno_df["Fish1_moving_direction_x"] = 0
-    anno_df["Fish1_moving_direction_y"] = 0
-    anno_df['same_direction_ratio'] = 0
-    anno_df['max_vector_angle'] = 0
-    anno_df['min_vector_angle'] = 0
-    anno_df['avg_vector_angle'] = 0
+    # Initialize and copy temporary columns
+    temp_columns = assign_feature_columns(anno_df)
 
-    # use a temporary variable to prevent SettingWithCopyWarning problem
-    temp_df_dtw = anno_df['DTW_distance'].copy()  
-    temp_df_fish0_avgv = anno_df['Fish0_avg_velocity'].copy()
-    temp_df_fish1_avgv = anno_df['Fish1_avg_velocity'].copy()
-    temp_df_fish0_minv = anno_df['Fish0_min_velocity'].copy()
-    temp_df_fish1_minv = anno_df['Fish1_min_velocity'].copy()
-    temp_df_fish0_maxv = anno_df['Fish0_max_velocity'].copy()
-    temp_df_fish1_maxv = anno_df['Fish1_max_velocity'].copy()
-    temp_df_fish0_movement_length = anno_df['Fish0_movement_length'].copy()
-    temp_df_fish1_movement_length = anno_df['Fish1_movement_length'].copy()
-    temp_movementl_diff_df = anno_df['movement_length_differnece'].copy()
-    temp_df_direction_fish0_x = anno_df['Fish0_moving_direction_x'].copy()
-    temp_df_direction_fish0_y = anno_df['Fish0_moving_direction_y'].copy()
-    temp_df_direction_fish1_x = anno_df["Fish1_moving_direction_x"].copy()
-    temp_df_direction_fish1_y = anno_df["Fish1_moving_direction_y"].copy()
-    temp_df_same_direction_ratio = anno_df['same_direction_ratio'].copy()
-    temp_df_min_vector_angle = anno_df['min_vector_angle'].copy()
-    temp_df_max_vector_angle = anno_df['max_vector_angle'].copy()
-    temp_df_avg_vector_angle = anno_df['avg_vector_angle'].copy()
-
-    # Calculate some features in the same trajectory interval between two trajectories
+    # Calculate features between two trajectories
     with IncrementalBar(video_name + ' - Progress of Final Caculation', max=len(anno_df.index)) as bar:  # with a progress bar
         for index in range(0, len(anno_df.index)):
-            # get a line of interval information from annotation data
             start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
-            # calculate DTW in the same interval (compare the trajectory of fish 0 and fish 1)
-            temp_df_dtw.iloc[index] = calculate_dtw(start_frame, end_frame, basic_data_df['Fish0_x'], basic_data_df['Fish0_y'], basic_data_df['Fish1_x'], basic_data_df['Fish1_y'])
+            # DTW calculation
+            temp_columns['DTW_distance'].iloc[index] = calculate_dtw(
+                start_frame, end_frame, basic_data_df['Fish0_x'], basic_data_df['Fish0_y'], basic_data_df['Fish1_x'], basic_data_df['Fish1_y']
+            )
 
-            # calculate average velocity in each trajectory
-            temp_df_fish0_avgv.iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
-            temp_df_fish1_avgv.iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
+            # Velocity calculations
+            temp_columns['Fish0_avg_velocity'].iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
+            temp_columns['Fish1_avg_velocity'].iloc[index] = calculate_avg_velocity(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
 
-            # get the minimun and miximum velocity in each trajectory
-            temp_df_fish0_minv.iloc[index], temp_df_fish0_maxv.iloc[index] = get_min_max(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
-            temp_df_fish1_minv.iloc[index], temp_df_fish1_maxv.iloc[index] = get_min_max(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
+            # Min and max velocity
+            temp_columns['Fish0_min_velocity'].iloc[index], temp_columns['Fish0_max_velocity'].iloc[index] = get_min_max(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
+            temp_columns['Fish1_min_velocity'].iloc[index], temp_columns['Fish1_max_velocity'].iloc[index] = get_min_max(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
 
-            # calculate movement length in each trajectory
+            # Movement length
             movement_length_fish0 = calculate_movement_length(start_frame, end_frame, basic_data_df['Fish0_interframe_movement_dist'])
             movement_length_fish1 = calculate_movement_length(start_frame, end_frame, basic_data_df['Fish1_interframe_movement_dist'])
-            temp_df_fish0_movement_length.iloc[index] = movement_length_fish0
-            temp_df_fish1_movement_length.iloc[index] = movement_length_fish1
+            temp_columns['Fish0_movement_length'].iloc[index] = movement_length_fish0
+            temp_columns['Fish1_movement_length'].iloc[index] = movement_length_fish1
+            temp_columns['movement_length_differnece'].iloc[index] = round(movement_length_fish0 - movement_length_fish1, 2)
 
-            # calculate movement length difference between two trajectories
-            temp_movementl_diff_df.iloc[index] = round(movement_length_fish0 - movement_length_fish1, 2)
-
-            # calculate a direction feature in a trajectory
+            # Direction calculation
             fish0_direction_x, fish0_direction_y = calculate_direction(start_frame, end_frame, basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'])
             fish1_direction_x, fish1_direction_y = calculate_direction(start_frame, end_frame, basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y'])
-            temp_df_direction_fish0_x.iloc[index], temp_df_direction_fish0_y.iloc[index] = fish0_direction_x, fish0_direction_y
-            temp_df_direction_fish1_x.iloc[index], temp_df_direction_fish1_y.iloc[index] = fish1_direction_x, fish1_direction_y
+            temp_columns['Fish0_moving_direction_x'].iloc[index], temp_columns['Fish0_moving_direction_y'].iloc[index] = fish0_direction_x, fish0_direction_y
+            temp_columns['Fish1_moving_direction_x'].iloc[index], temp_columns['Fish1_moving_direction_y'].iloc[index] = fish1_direction_x, fish1_direction_y
 
-            # Calculate the ratio when fish swim in same direction in a trajectory
+            # Vector angles and SDR
             df_vector_angles = calculate_vector_angles(start_frame, end_frame, 
-                                                        basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'],
-                                                        basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y'])
-            # min_vector_angle, max_vector_angle = min(df_vector_angles['direction_vector_angle']), max(df_vector_angles['direction_vector_angle'])
+                                                       basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'],
+                                                       basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y'])
             min_vector_angle, max_vector_angle, avg_vector_angle = getVectorAnglesFeature(df_vector_angles['direction_vector_angle'])
             same_direction_ratio = calculate_same_direction_ratio(df_vector_angles['direction_vector_angle'])
-            temp_df_avg_vector_angle.iloc[index], temp_df_same_direction_ratio.iloc[index] = avg_vector_angle, same_direction_ratio
-            temp_df_min_vector_angle.iloc[index], temp_df_max_vector_angle.iloc[index] = min_vector_angle, max_vector_angle
+
+            temp_columns['avg_vector_angle'].iloc[index], temp_columns['same_direction_ratio'].iloc[index] = avg_vector_angle, same_direction_ratio
+            temp_columns['min_vector_angle'].iloc[index], temp_columns['max_vector_angle'].iloc[index] = min_vector_angle, max_vector_angle
 
             bar.next()
 
-    # Remeber to save the result from the temporary variable
-    anno_df["DTW_distance"] = temp_df_dtw.copy()
-    anno_df['Fish0_avg_velocity'] = temp_df_fish0_avgv.copy()
-    anno_df['Fish1_avg_velocity'] = temp_df_fish1_avgv.copy()
-    anno_df['Fish0_min_velocity'] = temp_df_fish0_minv.copy()
-    anno_df['Fish1_min_velocity'] = temp_df_fish1_minv.copy()
-    anno_df['Fish0_max_velocity'] = temp_df_fish0_maxv.copy()
-    anno_df['Fish1_max_velocity'] = temp_df_fish1_maxv.copy()
-    anno_df['Fish0_movement_length'] = temp_df_fish0_movement_length.copy()
-    anno_df['Fish1_movement_length'] = temp_df_fish1_movement_length.copy()
-    anno_df['movement_length_differnece'] = temp_movementl_diff_df.copy()
-    anno_df['Fish0_moving_direction_x'] = temp_df_direction_fish0_x.copy()
-    anno_df['Fish0_moving_direction_y'] = temp_df_direction_fish0_y.copy()
-    anno_df["Fish1_moving_direction_x"] = temp_df_direction_fish1_x.copy()
-    anno_df["Fish1_moving_direction_y"] = temp_df_direction_fish1_y.copy()
-    anno_df['same_direction_ratio'] = temp_df_same_direction_ratio.copy()
-    anno_df['min_vector_angle'] = temp_df_min_vector_angle.copy()
-    anno_df['max_vector_angle'] = temp_df_max_vector_angle.copy()
-    anno_df['avg_vector_angle'] = temp_df_avg_vector_angle.copy()
+    # Save results back to dataframe
+    save_temp_columns_back(anno_df, temp_columns)
 
-    # Save the result in a new csv file
+    # Save to CSV
     anno_df.to_csv(resource_folder + video_name + "_" + filter_name + "_preprocessed_result.csv", index = False)
-    print("Complete calculation. The file had been saved in: " + folder_path)
-    print("\n")
+    print("Complete calculation. The file had been saved in: " + folder_path + "\n")
 
 
 def normalize_preprocessed_data(folder_path, video_name, filter_name):
