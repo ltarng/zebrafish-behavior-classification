@@ -16,13 +16,13 @@ def f_importances(coef, names):
 def plot_feature_importance(model_, chosen_model, features):
     feature_names = {
         'dtw_velocities_direction_sdr_partangles_length': ['AVG1', 'AVG2', 'DTW', 'Dist1', 'Dist2',
-                                                            'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
-                                                            'V1_x', 'V1_y', 'V2_x', 'V2_y',
-                                                            'SDR', 'min(A)', 'max(A)'],
+                                                           'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
+                                                           'V1_x', 'V1_y', 'V2_x', 'V2_y',
+                                                           'SDR', 'min(A)', 'max(A)'],
         'dtw_velocities_direction_sdr_angles_length': ['AVG1', 'AVG2', 'DTW', 'Dist1', 'Dist2',
-                                                         'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
-                                                         'V1_x', 'V1_y', 'V2_x', 'V2_y',
-                                                         'SDR', 'avg(A)', 'min(A)', 'max(A)']
+                                                       'max(D1)', 'max(D2)', 'min(D1)', 'min(D2)',
+                                                       'V1_x', 'V1_y', 'V2_x', 'V2_y',
+                                                       'SDR', 'avg(A)', 'min(A)', 'max(A)']
     }.get(features)
 
     if feature_names is None:

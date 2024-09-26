@@ -22,37 +22,39 @@ A system for thesis.
 
 ## Parameters May Need to Modify by Manual
 ### main.py
-#### General Setting
-- folder_path: a string format (for example: "D:/Research/Trajectory Analysis/")
-- video_names: a list format (for example: ['1-14', '1-22_2nd'])
-- filter_name: "mean", "median", "kalman", "nofilter"
+#### 1. General Setting
+- ```video_names```: A list of video names (e.g. ```['1-14', '1-22_2nd']```).
+- ```filter_name```: Specifies the filter type to apply. Options include ```"mean"```, ```"median"```, ```"kalman"```, and ```"nofilter"```.
 
-#### System Execution Setting
-- ifDoDataCleaning: a boolean (for example: True)
-- ifDoAnnotate: boolean
-- ifDoPreprocess: boolean
-- ifDoAnalysis: boolean
-- ifPlotTraj: boolean
-- ifSkipSemi: boolean
-- ifDoTuning: boolean
-- ifDoTraining: boolean
-- class_num: 3 or 4 (number of behavior categories)
-- model_name: "SVM", "RandomForest", or "XGBoost"
-- feature: (depends on which features you would like to use, please refer to the function getFeaturesData() in ml_model.py)
 
------
-
-### ml_model.py
-#### function - hyperparameter_tuning()
-- params: depends on what combinations you would like to try
-
-#### function - machine_learning_main_cv_ver()
-- k_num: integer, such as 5 or 10 ("k" for k-fold cross validation)
+#### 2. System Execution Setting
+- ```execute_steps```: A dictionary that controls which of the following steps to run, using boolean flags:
+    - ```"data_cleaning"```: Executes data cleaning if set to ```True```.
+    - ```"annotation"```: Adds annotations if set to ```True```.
+    - ```"preprocessing"```: Performs data preprocessing if set to ```True```.
+    - ```"analysis"```: Runs data analysis if set to ```True```.
+- Variables within the ```"data_cleaning"``` step:
+    - ```if_plot_traj```: Boolean flag to indicate whether to plot graphs comparing trajectories before and after filtering.
+- Variables within the ```"preprocessing"``` step:
+    - ```skip_semi```: Boolean flag to determine if semi-calculation steps should be skipped.
+- Variables within the ```"analysis"``` step:
+    - ```do_tuning```: Boolean flag to indicate whether to perform hyperparameter tuning.
+    - ```do_training```: Boolean flag to indicate whether to train the model.
+    - ```model_name```: Specifies the model to use. Options are ```"SVM"```, ```"RandomForest"```, and ```"XGBoost"```.
+    - ```feature```: Specifies the feature combination to use. Options include: 
+        - ```"dtw_velocities_direction_sdr_partangles_length"```
+        - ```"dtw_velocities_direction_sdr_angles_length"```
+    - ```class_amount```: Integer value specifying the number of behavior categories. Options are ```2```, ```3```, and ```4```.
 
 -----
 
-### preprocess_calculate.py (not essential)
-*Only need to modify when you change the amount of features.
-#### function - normalize_preprocessed_data()
-- start_col: integer
-- end_col: integer
+### machine_learning_pipeline.py
+- ```k_num```: Integer (e.g., ```5``` or ```10```),  representing the **"k"** value for ***k***-fold cross-validation.
+
+-----
+
+### preprocess_calculate.py *(optional)*
+*Modification is only necessary if the amount of features changes.*
+#### 1. Function ```normalize_preprocessed_data()```
+- ```start_col```: Integer indicating the starting column.
+- ```end_col```: Integer indicating the ending column.
