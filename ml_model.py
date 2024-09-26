@@ -3,7 +3,7 @@ import numpy as np
 import copy as cp
 from typing import Tuple
 import os
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -12,68 +12,30 @@ from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 from time import process_time
-from sklearn.model_selection import GridSearchCV
 
-def getFeaturesData(feature, df):
-    # Single Feature
-    if feature == "dtw":
-        X = np.vstack( df['DTW_distance'].to_numpy() )  # transform df['DTW_distance'] into a numpy 2D-array
-    elif feature == "velocity":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity']))
-    elif feature == "min_max_velocity":
-        X = np.column_stack((df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity']))
-    elif feature == "movement_length":
-        X = np.column_stack((df['Fish0_movement_length'], df['Fish1_movement_length']))
-    elif feature == "movement_length_difference":
-        X = np.vstack( df['movement_length_differnece'].to_numpy() )
-    elif feature == "direction":
-        X = np.column_stack((df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y']))
-    elif feature == "same_direction_ratio":
-        X = np.vstack( df['same_direction_ratio'].to_numpy() )
-    elif feature == "avg_vector_angle":
-        X = np.vstack( df['avg_vector_angle'].to_numpy() )
-    elif feature == "min_max_vector_angle":
-        X = np.column_stack((df['min_vector_angle'], df['max_vector_angle']))
-    # Combined Features
-    elif feature == "dtw_velocities_direction_sdr_angles_length":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
-                             df['Fish0_movement_length'], df['Fish1_movement_length'], 
-                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio'], df['avg_vector_angle'], df['min_vector_angle'], df['max_vector_angle']))
-    elif feature == "dtw_velocities_direction_sdr_partangles_length":
-        X = np.column_stack((df['Fish0_avg_velocity'], df['Fish1_avg_velocity'], df['DTW_distance'], 
-                             df['Fish0_movement_length'], df['Fish1_movement_length'], 
-                             df['Fish0_max_velocity'], df['Fish1_max_velocity'], df['Fish0_min_velocity'], df['Fish1_min_velocity'], 
-                             df['Fish0_moving_direction_x'], df['Fish0_moving_direction_y'], df['Fish1_moving_direction_x'], df['Fish1_moving_direction_y'], 
-                             df['same_direction_ratio'], df['min_vector_angle'], df['max_vector_angle']))
+from feature_engineering import getFeaturesData
+
+
+# Dictionary for feature and model setting
+MODEL_MAP = {
+    "SVM": lambda: SVC(C=0.01, kernel="linear"),
+    "DecisionTree": lambda: DecisionTreeClassifier(),
+    "RandomForest": lambda: RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2'),
+    "XGBoost": lambda: xgb.sklearn.XGBClassifier(colsample_bytree=0.5, learning_rate=0.3, max_depth=9, n_estimators=200)
+}
+
+PARAM_GRID = {
+    "SVM": [{'kernel': ['linear'], 'C': [1, 5, 10, 20, 30, 40, 50]}, {'kernel': ['rbf'], 'gamma': ['scale', 'auto']}],
+    "RandomForest": {'n_estimators': [500, 600, 700, 800, 900, 1000], 'max_features': ['sqrt', 'log2', None], 'max_depth': [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 'criterion': ['gini', 'entropy']},
+    "XGBoost": {'max_depth': [8, 9], 'learning_rate': [0.1, 0.15, 0.2, 0.25, 0.3], 'n_estimators': [150, 200, 250, 300], 'colsample_bytree': [0.3, 0.5, 0.7], 'gamma': [0, 1, 2, 3, 4, 5]}
+}
+
+
+def getModel(chosen_model: str):
+    if chosen_model in MODEL_MAP:
+        return MODEL_MAP[chosen_model](), chosen_model
     else:
-        print("Error: feature name does not exist.")
-    return X
-
-
-def getModel(chosen_model):
-    # Select model and training
-    if chosen_model == "SVM":
-        kernel_name = "linear"
-        model_name = chosen_model + '-' + kernel_name
-        model = SVC(C=0.01, kernel=kernel_name)  # not normalization
-        # model = SVC(C=20, kernel=kernel_name)  # normalization data
-    elif chosen_model == "DecisionTree":
-        model_name = "Decision Tree"
-        model = DecisionTreeClassifier()
-    elif chosen_model == "RandomForest":
-        model_name = "Random Forest"
-        model = RandomForestClassifier(max_depth=13, n_estimators=900, criterion="gini", max_features='log2')
-        # model = RandomForestClassifier(max_depth=6, n_estimators=900, criterion="gini", max_features='log2')  # normalization for 4cat
-    elif chosen_model == "XGBoost":
-        model_name = "XGBoost"
-        # model = xgb.sklearn.XGBClassifier(max_depth=6, learning_rate=0.3, n_estimators=100, colsample_bytree=1)  # default parameter setting
-        model = xgb.sklearn.XGBClassifier(colsample_bytree=0.5, learning_rate=0.3, max_depth=9, n_estimators=200)
-        # model = xgb.sklearn.XGBClassifier(colsample_bytree=0.3, learning_rate=0.15, max_depth=6, n_estimators=250, gamma=3)
-    else:
-        print("Wrong model name! Please check the variable 'model_name' in main.py.")
-    return model, model_name
+        raise ValueError(f"Error: model name {chosen_model} does not exist.")
 
 
 def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feature, class_num):
@@ -86,29 +48,11 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=54, stratify=y)
     
     # Define value of parameters for Grid Search
-    if model_name == "SVM":
-        params = [{'kernel': ['linear'],
-                #    'C': [0.001,0.005,0.01,0.05,0.1,1]},  # non-normalized data
-                   'C': [1,5,10,20,30,40,50]},  # nomalized data
-                   {'kernel':['rbf'],'gamma':['scale', 'auto']}
-                   ]
-        model = SVC(random_state=1)
-    elif model_name == "RandomForest":
-        params = {'n_estimators': [500,600,700,800,900,1000], 
-                  'max_features': ['sqrt', 'log2', None],
-                  'max_depth' : [6,7,8,9,10,11,12,13,14,15],
-                  'criterion' :['gini','entropy']}
-        model = RandomForestClassifier(random_state=1)
-    elif model_name == "XGBoost":
-        params = {'max_depth': [8,9],
-                  'learning_rate': [0.1, 0.15, 0.2, 0.25, 0.3],
-                  'n_estimators': [150,200,250,300],
-                  'colsample_bytree': [0.3,0.5,0.7],
-                  'gamma': [0,1,2,3,4,5],
-                  'n_jobs': [-1]}
-        model = xgb.sklearn.XGBClassifier(random_state=1)
+    if model_name in PARAM_GRID:
+        params = PARAM_GRID[model_name]
+        model = getModel(model_name)[0]
     else:
-        print("Invalid model name.")
+        raise ValueError(f"Invalid model name: {model_name}")
 
     # Do Grid Search, seeking the best combination of parameters
     skfold = StratifiedKFold(n_splits=5, random_state=99, shuffle=True)  # For 5-fold cross-validation
@@ -123,10 +67,7 @@ def hyperparameter_tuning(folder_path, video_name, filter_name, model_name, feat
     # Show the result of all hyper-parameter combination
     print(f"Best accuracy: {grid_result.best_score_}, best parameter combination: {grid_result.best_params_}")
     # Get mean accuracy and standard deviation in cross validation
-    means = grid_result.cv_results_['mean_test_score']
-    stds = grid_result.cv_results_['std_test_score']
-    params = grid_result.cv_results_['params']
-    for mean, stdev, param in zip(means, stds, params):
+    for mean, stdev, param in zip(grid_result.cv_results_['mean_test_score'], grid_result.cv_results_['std_test_score'], grid_result.cv_results_['params']):
         print(f"Mean accuracy: {mean}, standard deviation: {stdev}, parameter combination: {param}")
     print("Best parameters:", clf.best_params_)
 
