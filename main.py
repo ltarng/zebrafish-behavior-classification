@@ -1,7 +1,7 @@
 import annotate_training_data
 import preprocess_calculate
 import data_cleaning
-import ml_model
+import machine_learning_pipeline
 import combine_data
 import os
 
@@ -44,7 +44,7 @@ def preprocessing_step(skip_semi):
     combine_data.combine_preprocessed_main(folder_path, video_names, filter_name)
 
 
-def analysis_step(do_tuning, do_training, model_name, feature, class_num):
+def analysis_step(do_tuning, do_training, model_name, feature, class_amount):
     """
     Performs model analysis, including tuning and training.
 
@@ -52,15 +52,15 @@ def analysis_step(do_tuning, do_training, model_name, feature, class_num):
     :param do_training: If True, execute model training.
     :param model_name: The name of the machine learning model to use.
     :param feature: The feature set to use for the model.
-    :param class_num: The number of classes for classification. 
+    :param class_amount: The number of classes for classification. 
     """
     if do_tuning:
-        ml_model.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_num)
-        # ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)
+        machine_learning_pipeline.hyperparameter_tuning(folder_path, "Combined", filter_name, model_name, feature, class_amount)
+        # ml_model.hyperparameter_tuning(folder_path, "Combined_nor", filter_name, model_name, feature, class_amount)
 
     if do_training:
-        ml_model.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_num)
-        # ml_model.machine_learning_main_cv_ver(folder_path, "Combined_nor", filter_name, model_name, feature, class_num)
+        machine_learning_pipeline.machine_learning_main_cv_ver(folder_path, "Combined", filter_name, model_name, feature, class_amount)
+        # ml_model.machine_learning_main_cv_ver(folder_path, "Combined_nor", filter_name, model_name, feature, class_amount)  # Use normalized raw data
 
 
 def main():
@@ -94,7 +94,7 @@ def main():
             do_training=True, 
             model_name="SVM",  # Options: 'SVM', 'RandomForest', 'XGBoost'
             feature="dtw_velocities_direction_sdr_partangles_length",   # Options: "dtw_velocities_direction_sdr_partangles_length", "dtw_velocities_direction_sdr_angles_length"
-            class_num=2  # option: 2 (normal/abnormal), 3 (high/moderate/low aggression), 4 (bite/chase/display/normal)
+            class_amount=2  # option: 2 (normal/abnormal), 3 (high/moderate/low aggression), 4 (bite/chase/display/normal)
         )
 
 
