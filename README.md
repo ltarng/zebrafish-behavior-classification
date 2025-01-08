@@ -1,5 +1,15 @@
 # Zebrafish Behavior Classification System
-A system for thesis.
+This is a system utilizing machine learning methods (SVM, XGBoost, Random Forest) to classify zebrafish behaviors into 2 to 4 categories.
+
+The raw data consists of the X and Y coordinates of multiple zebrafish in each frame of the video. 
+
+#### Raw data format example:
+| FramIndex | Fish0_x | Fish0_y | Fish1_x | Fish1_y |
+|--------:|:---------|:---------|:---------|:---------|
+| 1 | 113 | 556 | 705 | 803 |
+| 2 | 111 | 579 | 704 | 806 |
+| 3 | 99 | 300 | 713 | 809 |
+| 4 | 99 | 300 | 725 | 811 |
 
 ## Pakage List
 | Pakage Name | version |
@@ -55,6 +65,6 @@ A system for thesis.
 
 ### preprocess_calculate.py *(optional)*
 *Modification is only necessary if the amount of features changes.*
-#### 1. Function ```normalize_preprocessed_data()```
+#### 1. Function ```normalize_and_save()```
 - ```start_col```: Integer indicating the starting column.
 - ```end_col```: Integer indicating the ending column.
