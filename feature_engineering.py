@@ -4,37 +4,52 @@ import math
 from dtaidistance import dtw_ndim
 
 
-def calculate_dtw(start_frame, end_frame, fish0_x, fish0_y, fish1_x, fish1_y):
-    trajectory_fish0 = np.column_stack((fish0_x[start_frame:end_frame-1], fish0_y[start_frame:end_frame-1]))
-    trajectory_fish1 = np.column_stack((fish1_x[start_frame:end_frame-1], fish1_y[start_frame:end_frame-1]))
-    
-    dtw_distance = dtw_ndim.distance(trajectory_fish0, trajectory_fish1)
+def extract_coordinates(df_fish_x, df_fish_y, index):
+    return [df_fish_x.iloc[index], df_fish_y.iloc[index]]
+
+
+def calculate_distance_between_frames(p0, p1):
+    return round(math.dist(p0, p1), 2)
+
+
+def calculate_vector_between_frames(p0, p1):
+    x_shift = p1[0] - p0[0]
+    y_shift = p1[1] - p0[1]
+    return x_shift, y_shift
+
+
+def calculate_distance_and_vector(temp_columns, index, df, fish_prefix):
+    temp_columns[fish_prefix + 'interframe_movement_dist'].iloc[index] = calculate_distance_between_frames(
+        extract_coordinates(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index), 
+        extract_coordinates(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index+1)
+    )
+    temp_columns[fish_prefix + 'interframe_moving_direction_x'].iloc[index], temp_columns[fish_prefix + 'interframe_moving_direction_y'].iloc[index] = calculate_vector_between_frames(
+        extract_coordinates(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index), 
+        extract_coordinates(df[fish_prefix + 'x'], df[fish_prefix + 'y'], index+1)
+    )
+
+
+def calculate_dtw(start_frame, end_frame, traj_df_f0_x, traj_df_f0_y, traj_df_f1_x, traj_df_f1_y):
+    traj1 = np.column_stack((traj_df_f0_x[start_frame:end_frame-1], traj_df_f0_y[start_frame:end_frame-1]))
+    traj2 = np.column_stack((traj_df_f1_x[start_frame:end_frame-1], traj_df_f1_y[start_frame:end_frame-1]))
+    dtw_distance = dtw_ndim.distance(traj1, traj2)
     return round(dtw_distance, 2)
 
 
-def calculate_avg_velocity(start_frame, end_frame, traj_df):
-    # average moving interframe distance
+def calculate_avg_velocity(start_frame, end_frame, traj_df):  # average moving interframe distance
     avg_dist = round(traj_df[start_frame:end_frame-1].mean(), 2)
     return round(avg_dist, 2)
 
 
-def get_min_max_value(start_frame, end_frame, traj_df):
+def get_min_max(start_frame, end_frame, traj_df):
     min_value = min(traj_df[start_frame:end_frame-1])
     max_value = max(traj_df[start_frame:end_frame-1])
     return min_value, max_value
 
 
-def calculate_total_movement_length(start_frame, end_frame, traj_df):
-    # total moving disance
+def calculate_movement_length(start_frame, end_frame, traj_df):  # total moving disance
     movement_length = traj_df[start_frame:end_frame-1].sum()
     return round(movement_length, 2)
-
-
-def calculate_total_direction_shift(start_frame, end_frame, traj_df_x, traj_df_y):
-    # summation of moving vectors
-    fish_mean_shift_x = traj_df_x[start_frame:end_frame-1].sum()
-    fish_mean_shift_y = traj_df_y[start_frame:end_frame-1].sum()
-    return fish_mean_shift_x, fish_mean_shift_y
 
 
 def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # summation of moving vectors
@@ -43,9 +58,7 @@ def calculate_direction(start_frame, end_frame, traj_df_x, traj_df_y):  # summat
     return fish_mean_shift_x, fish_mean_shift_y
 
 
-def calculate_angle_between_vectors(a, b):
-    # an angle between two interframe moving vectors
-
+def calculate_angle_between_vectors(a, b):  # an angle between two interframe moving vectors
     # Transform list to numpy array
     v1, v2 = np.array(a), np.array(b)
 
@@ -81,18 +94,18 @@ def calculate_angle_between_vectors(a, b):
     return round(angle, 2)
 
 
-def extract_vector_angle_features(df_vector_angles):
+def getVectorAnglesFeature(df_vector_angles):
     min_angle = min(df_vector_angles)
     max_angle = max(df_vector_angles)
     avg_angle = round(df_vector_angles.mean(), 2)
     return min_angle, max_angle, avg_angle
 
 
-def calculate_angles_between_vectors(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):  # angles between two vectors
+def calculate_vector_angles(start_frame, end_frame, df_fish0_x_shift, df_fish0_y_shift, df_fish1_x_shift, df_fish1_y_shift):  # angles between two vectors
     vector_angles = []
     for index in range(start_frame, end_frame):
         vector_angle = calculate_angle_between_vectors([df_fish0_x_shift.iloc[index], df_fish0_y_shift.iloc[index]], 
-                                                       [df_fish1_x_shift.iloc[index], df_fish1_y_shift.iloc[index]])
+                                                      [df_fish1_x_shift.iloc[index], df_fish1_y_shift.iloc[index]])
         vector_angles.append(vector_angle)
     df = pd.DataFrame(vector_angles, columns=['direction_vector_angle'])
     return df

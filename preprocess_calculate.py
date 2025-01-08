@@ -1,8 +1,7 @@
-from io_utils import read_csv, save_results
-from basic_calculations import calculate_distance_and_vector
-import feature_calculations as feature_cal
 from progress.bar import IncrementalBar
-import normalization
+from sklearn.preprocessing import MinMaxScaler
+from io_utils import read_csv, save_results
+import feature_engineering as feature_engr
 
 
 def assign_temp_columns(df, column_names):
@@ -30,14 +29,14 @@ def calculate_semifinished_result(folder_path, video_name, filter_name):  # Calc
     
     temp_columns = assign_temp_columns(df, column_names)
 
-    # Calculate distance and vector between frames
-    with IncrementalBar(video_name + ' - Progress of Basic Caculation', max=len(df.index)) as bar:
+    # Calculate moving distance in the same trajectory interval between two trajectories
+    with IncrementalBar(video_name + ' - Progress of Basic Caculation', max=len(df.index)) as bar:  # with a progress bar
         for index in range(0, len(df.index)-1):
-            calculate_distance_and_vector(temp_columns, index, df, 'Fish0_')
-            calculate_distance_and_vector(temp_columns, index, df, 'Fish1_')
+            feature_engr.calculate_distance_and_vector(temp_columns, index, df, 'Fish0_')
+            feature_engr.calculate_distance_and_vector(temp_columns, index, df, 'Fish1_')
             bar.next()
 
-    # Save result
+    # Save results
     save_temp_columns_back(df, temp_columns)
     save_results(df, folder_path, video_name, filter_name, "_basic_result.csv")
 
@@ -56,48 +55,50 @@ def calculate_final_result(folder_path, video_name, filter_name):
 
     temp_columns = assign_temp_columns(anno_df, feature_names)
 
-    # Calculate features
+    # Calculate some features in the same trajectory interval between two trajectories
     with IncrementalBar(video_name + ' - Progress of Final Caculation', max=len(anno_df.index)) as bar:  # with a progress bar
         for index in range(0, len(anno_df.index)):
+            # get a line of interval information from annotation data
             start_frame, end_frame = anno_df['StartFrame'].iloc[index], anno_df['EndFrame'].iloc[index]
 
-            # DTW
-            temp_columns['DTW_distance'].iloc[index] = feature_cal.calculate_dtw(
+            # calculate DTW in the same interval (compare the trajectory of fish 0 and fish 1)
+            temp_columns['DTW_distance'].iloc[index] = feature_engr.calculate_dtw(
                 start_frame, end_frame, basic_data_df['Fish0_x'], basic_data_df['Fish0_y'], basic_data_df['Fish1_x'], basic_data_df['Fish1_y']
             )
 
             # Average, min and Max velocity
             for fish in ['Fish0', 'Fish1']:
-                temp_columns[f'{fish}_avg_velocity'].iloc[index] = feature_cal.calculate_avg_velocity(
+                temp_columns[f'{fish}_avg_velocity'].iloc[index] = feature_engr.calculate_avg_velocity(
                     start_frame, end_frame, basic_data_df[f'{fish}_interframe_movement_dist']
                 )
-                temp_columns[f'{fish}_min_velocity'].iloc[index], temp_columns[f'{fish}_max_velocity'].iloc[index] = feature_cal.get_min_max_value(
+                temp_columns[f'{fish}_min_velocity'].iloc[index], temp_columns[f'{fish}_max_velocity'].iloc[index] = feature_engr.get_min_max(
                     start_frame, end_frame, basic_data_df[f'{fish}_interframe_movement_dist']
                 )
 
-            # Movement length and movement length difference
+            # Movement length
             for fish in ['Fish0', 'Fish1']:
-                temp_columns[f'{fish}_movement_length'].iloc[index] = feature_cal.calculate_total_movement_length(
+                temp_columns[f'{fish}_movement_length'].iloc[index] = feature_engr.calculate_movement_length(
                     start_frame, end_frame, basic_data_df[f'{fish}_interframe_movement_dist']
                 )
-                temp_columns['movement_length_difference'].iloc[index] = round(
-                    temp_columns['Fish0_movement_length'].iloc[index] - temp_columns['Fish1_movement_length'].iloc[index], 2
-                )
+            
+            # Movement Length Difference between two trajectories
+            temp_columns['movement_length_difference'].iloc[index] = round(
+                temp_columns['Fish0_movement_length'].iloc[index] - temp_columns['Fish1_movement_length'].iloc[index], 2
+            )
 
             # Moving direction
             for fish in ['Fish0', 'Fish1']:
-                temp_columns[f'{fish}_moving_direction_x'].iloc[index], temp_columns[f'{fish}_moving_direction_y'].iloc[index] = feature_cal.calculate_direction(
+                temp_columns[f'{fish}_moving_direction_x'].iloc[index], temp_columns[f'{fish}_moving_direction_y'].iloc[index] = feature_engr.calculate_direction(
                     start_frame, end_frame, basic_data_df[f'{fish}_interframe_moving_direction_x'], basic_data_df[f'{fish}_interframe_moving_direction_y']
                 )
 
             # Vector angles and same direction ratio
-            df_vector_angles = feature_cal.calculate_angles_between_vectors(start_frame, end_frame, 
+            df_vector_angles = feature_engr.calculate_vector_angles(start_frame, end_frame, 
                 basic_data_df['Fish0_interframe_moving_direction_x'], basic_data_df['Fish0_interframe_moving_direction_y'],
                 basic_data_df['Fish1_interframe_moving_direction_x'], basic_data_df['Fish1_interframe_moving_direction_y']
             )
-            min_angle, max_angle, avg_angle = feature_cal.extract_vector_angle_features(df_vector_angles['direction_vector_angle'])
-            temp_columns['min_vector_angle'].iloc[index], temp_columns['max_vector_angle'].iloc[index], temp_columns['avg_vector_angle'].iloc[index] = min_angle, max_angle, avg_angle
-            temp_columns['same_direction_ratio'].iloc[index] = feature_cal.calculate_same_direction_ratio(df_vector_angles['direction_vector_angle'])
+            temp_columns['min_vector_angle'].iloc[index], temp_columns['max_vector_angle'].iloc[index], temp_columns['avg_vector_angle'].iloc[index] = feature_engr.getVectorAnglesFeature(df_vector_angles['direction_vector_angle'])
+            temp_columns['same_direction_ratio'].iloc[index] = feature_engr.calculate_same_direction_ratio(df_vector_angles['direction_vector_angle'])
 
             bar.next()
 
@@ -107,5 +108,9 @@ def calculate_final_result(folder_path, video_name, filter_name):
 
 def normalize_and_save(folder_path, video_name, filter_name):
     df = read_csv(folder_path + "preprocessed_data/" + video_name + "_" + filter_name + "_preprocessed_result.csv")
-    df = normalization.normalize_preprocessed_data(df, start_col=4, end_col=22)
+
+    scaler = MinMaxScaler()
+    start_col, end_col = 4, 22  # be aware of this range if you change the amount of features
+    df.iloc[:,start_col:end_col] = scaler.fit_transform(df.iloc[:,start_col:end_col].to_numpy())
+    
     save_results(df, folder_path, video_name, filter_name, "_preprocessed_result_nor.csv")
